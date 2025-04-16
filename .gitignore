@@ -1,0 +1,53 @@
+# Entorno virtual
+venv/
+env/
+ENV/
+
+# Archivos de configuración con información sensible
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+
+# Directorios específicos de la aplicación
+emails/
+instance/
+
+# Base de datos SQLite
+*.db
+*.sqlite
+*.sqlite3
+
+# Archivos de caché de Python
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# Distribución / empaquetado
+dist/
+build/
+*.egg-info/
+
+# Archivos de logs
+*.log
+
+# Archivos del sistema operativo
+.DS_Store
+Thumbs.db
+
+# Archivos temporales
+*.tmp
+*.bak
+*.swp
+
+# Entornos de desarrollo
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+
+# Archivos de cobertura
+.coverage
+htmlcov/

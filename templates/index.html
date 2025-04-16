@@ -1,0 +1,1933 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Buscador de Vuelos</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --accent-color: #e74c3c;
+            --background-color: #f8f9fa;
+        }
+
+        body {
+            background: var(--background-color);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .hero-section {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 4rem 0;
+            margin-bottom: -3rem;
+            border-radius: 0 0 50% 50% / 20px;
+        }
+
+        .search-form-container {
+            margin-top: -2rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+        }
+
+        .form-control {
+            border-radius: 10px;
+            padding: 0.8rem 1rem;
+            border: 1px solid #e1e1e1;
+            transition: all 0.3s ease;
+        }
+
+        .form-control:focus {
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+            border-color: var(--secondary-color);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--secondary-color), #2980b9);
+            border: none;
+            border-radius: 10px;
+            padding: 0.8rem 2rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.3);
+        }
+
+        .flight-card {
+            border: 1px solid #e1e1e1;
+            border-radius: 10px;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            overflow: hidden;
+        }
+
+        .flight-card:hover {
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .flight-summary {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            background: #fff;
+            border-bottom: 1px solid #f0f0f0;
+            position: relative;
+            overflow: visible;
+        }
+        
+        .flight-details {
+            padding: 1rem;
+            background: #f9f9f9;
+            border-top: 1px solid #f0f0f0;
+        }
+        
+        .autocomplete-suggestions {
+            position: absolute;
+            z-index: 1000;
+            width: 100%;
+            max-height: 300px;
+            overflow-y: auto;
+            background-color: white;
+            border: 1px solid #ddd;
+            border-radius: 0 0 4px 4px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            display: none;
+        }
+        
+        .suggestion-item {
+            padding: 10px 15px;
+            cursor: pointer;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        .suggestion-item:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .suggestion-item .iata-code {
+            font-weight: bold;
+            color: #007bff;
+        }
+        
+        .suggestion-item .airport-name {
+            font-size: 0.9rem;
+        }
+        
+        .suggestion-item .location {
+            font-size: 0.8rem;
+            color: #6c757d;
+        }
+        
+        .flight-route {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex: 1;
+            margin: 0 1rem;
+        }
+        
+        .flight-time {
+            font-size: 1.5rem;
+            font-weight: bold;
+            position: relative;
+            z-index: 2;
+        }
+        
+        .flight-date {
+            font-size: 0.9rem;
+            color: #666;
+        }
+        
+        .flight-airport {
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+        
+        .flight-duration {
+            text-align: center;
+            color: #666;
+            font-size: 0.9rem;
+            position: relative;
+        }
+        
+        .flight-duration:before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: -40px;
+            right: -40px;
+            height: 1px;
+            background: #ccc;
+            z-index: 0;
+        }
+        
+        .flight-duration span {
+            background: #fff;
+            padding: 0 10px;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .flight-type {
+            font-size: 0.8rem;
+            color: #666;
+            margin-bottom: 0.5rem;
+        }
+        
+        .flight-segment {
+            padding: 1rem;
+            margin: 0.5rem 0;
+            background: #fff;
+            border-radius: 8px;
+            border: 1px solid #eee;
+        }
+        
+        .price-tag {
+            background: #3498db;
+            color: white;
+            padding: 0.4rem 0.7rem;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.2s ease;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            min-width: 80px;
+        }
+        
+        .price-tag:hover {
+            transform: scale(1.05);
+            box-shadow: 0 3px 6px rgba(0,0,0,0.15);
+        }
+        
+        .price-tag:nth-child(1) {
+            background: linear-gradient(to bottom, #2ecc71, #27ae60); /* Verde para tarifa básica */
+        }
+        
+        .price-tag:nth-child(2) {
+            background: linear-gradient(to bottom, #3498db, #2980b9); /* Azul para tarifa estándar */
+        }
+        
+        .price-tag:nth-child(3) {
+            background: linear-gradient(to bottom, #9b59b6, #8e44ad); /* Morado para tarifa familiar */
+        }
+        
+        .price-options {
+            display: flex;
+            gap: 5px;
+            position: absolute;
+            right: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 1;
+        }
+        
+        .price-tag small {
+            font-size: 0.65rem;
+            font-weight: normal;
+            opacity: 0.9;
+            margin-top: 0.1rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .airline-logo-container {
+            width: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .flight-number {
+            font-size: 0.8rem;
+            color: #666;
+            margin-top: 0.25rem;
+        }
+        
+        .details-btn {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            color: #495057;
+            padding: 0.375rem 0.75rem;
+            border-radius: 0.25rem;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .details-btn:hover {
+            background: #e9ecef;
+        }
+        
+        .flight-details-section {
+            margin-top: 1rem;
+            border-top: 1px solid #eee;
+            padding-top: 1rem;
+        }
+        
+        .flight-detail-header {
+            background: #f8f9fa;
+            padding: 0.5rem 1rem;
+            border-radius: 5px;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+
+        .input-icon {
+            position: relative;
+        }
+
+        .input-icon i {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #666;
+        }
+
+        .input-icon input {
+            padding-left: 2.5rem;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .animate-fade-in {
+            animation: fadeIn 0.5s ease forwards;
+        }
+
+        .loading-spinner {
+            width: 3rem;
+            height: 3rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="hero-section text-center">
+        <div class="container">
+            <h1 class="display-4 mb-3"><i class="fas fa-plane-departure me-3"></i>Buscador de Vuelos</h1>
+            <p class="lead">Encuentra los mejores precios para tu próximo viaje</p>
+            <div class="mt-4">
+                <button class="btn btn-light btn-lg me-2" onclick="showSearchTab()"><i class="fas fa-search me-2"></i>Buscar Vuelos</button>
+                <button class="btn btn-outline-light btn-lg" onclick="showPnrSearchModal()"><i class="fas fa-ticket-alt me-2"></i>Consultar Reserva</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="container search-form-container">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="card shadow animate-fade-in">
+                    <div class="card-body p-4">
+                        <form id="flightSearchForm">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <div class="input-icon">
+                                        <i class="fas fa-plane-departure"></i>
+                                        <input type="text" class="form-control" id="origin" required 
+                                               placeholder="Ciudad o aeropuerto de origen" autocomplete="off">
+                                        <input type="hidden" id="origin_code" name="origin">
+                                        <div id="origin_suggestions" class="autocomplete-suggestions"></div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="input-icon">
+                                        <i class="fas fa-plane-arrival"></i>
+                                        <input type="text" class="form-control" id="destination" required 
+                                               placeholder="Ciudad o aeropuerto de destino" autocomplete="off">
+                                        <input type="hidden" id="destination_code" name="destination">
+                                        <div id="destination_suggestions" class="autocomplete-suggestions"></div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="input-icon">
+                                        <i class="fas fa-calendar"></i>
+                                        <input type="date" class="form-control" id="departure_date" name="departure_date" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="input-icon">
+                                        <i class="fas fa-calendar-alt"></i>
+                                        <input type="date" class="form-control" id="return_date" name="return_date" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="input-icon">
+                                        <i class="fas fa-user"></i>
+                                        <input type="number" class="form-control" id="adults" name="adults" min="1" max="9" value="1" required placeholder="Adultos (máx. 9)">
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="input-icon">
+                                        <i class="fas fa-child"></i>
+                                        <input type="number" class="form-control" id="children" name="children" min="0" value="0" placeholder="Niños (2-17 años)">
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="input-icon">
+                                        <i class="fas fa-baby"></i>
+                                        <input type="number" class="form-control" id="infants" name="infants" min="0" value="0" placeholder="Infantes (0-2 años)">
+                                    </div>
+                                </div>
+
+
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="sourceSystem" class="form-label"><i class="fas fa-server me-2"></i>Tipo de distribución</label>
+                                        <select class="form-select" id="sourceSystem" name="sourceSystem">
+                                            <option value="GDS" selected>Ambos (GDS)</option>
+                                            <option value="NDC">NDC</option>
+                                            <option value="EDIFACT">EDIFACT</option>
+                                        </select>
+                                        <small class="form-text text-muted d-block">NDC ofrece contenido enriquecido y tarifas personalizadas</small>
+                                    </div>
+                                </div>
+                                <div class="col-12">
+                                    <button type="submit" class="btn btn-primary w-100">
+                                        <i class="fas fa-search me-2"></i>Buscar Vuelos
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <div id="results" class="mt-4"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script>
+        // Función para mostrar/ocultar detalles del vuelo
+        function toggleDetails(flightId) {
+            const detailsElement = document.getElementById(flightId);
+            const button = event.currentTarget;
+            
+            if (detailsElement.style.display === 'none') {
+                detailsElement.style.display = 'block';
+                button.innerHTML = '<i class="fas fa-chevron-up me-1"></i> Ocultar detalles';
+            } else {
+                detailsElement.style.display = 'none';
+                button.innerHTML = '<i class="fas fa-chevron-down me-1"></i> Ver detalles';
+            }
+        }
+        
+        // Función para manejar el autocompletado de aeropuertos
+        async function setupAirportAutocomplete(inputId, suggestionsId, hiddenInputId) {
+            const inputElement = document.getElementById(inputId);
+            const suggestionsElement = document.getElementById(suggestionsId);
+            const hiddenInput = document.getElementById(hiddenInputId);
+            let debounceTimer;
+            
+            // Función para buscar aeropuertos
+            async function searchAirports(keyword) {
+                try {
+                    const response = await fetch(`/autocomplete_airport?keyword=${encodeURIComponent(keyword)}`);
+                    if (!response.ok) throw new Error('Error en la búsqueda');
+                    
+                    const data = await response.json();
+                    return data.data || [];
+                } catch (error) {
+                    console.error('Error al buscar aeropuertos:', error);
+                    return [];
+                }
+            }
+            
+            // Función para mostrar sugerencias
+            function displaySuggestions(airports) {
+                suggestionsElement.innerHTML = '';
+                
+                if (airports.length === 0) {
+                    suggestionsElement.style.display = 'none';
+                    return;
+                }
+                
+                airports.forEach(airport => {
+                    const item = document.createElement('div');
+                    item.className = 'suggestion-item';
+                    item.innerHTML = `
+                        <div class="iata-code">${airport.iataCode}</div>
+                        <div class="airport-name">${airport.name}</div>
+                        <div class="location">${airport.cityName}, ${airport.countryName}</div>
+                    `;
+                    
+                    // Manejar clic en sugerencia
+                    item.addEventListener('click', () => {
+                        // Mostrar el nombre completo en el campo visible para mejor UX
+                        inputElement.value = `${airport.iataCode} - ${airport.name}`;
+                        // Guardar solo el código IATA de 3 caracteres en el campo oculto para la búsqueda
+                        hiddenInput.value = airport.iataCode;
+                        suggestionsElement.style.display = 'none';
+                    });
+                    
+                    suggestionsElement.appendChild(item);
+                });
+                
+                suggestionsElement.style.display = 'block';
+            }
+            
+            // Evento de entrada de texto
+            inputElement.addEventListener('input', function() {
+                const keyword = this.value.trim();
+                
+                // Limpiar el temporizador anterior
+                clearTimeout(debounceTimer);
+                
+                // No buscar si hay menos de 2 caracteres
+                if (keyword.length < 2) {
+                    suggestionsElement.style.display = 'none';
+                    return;
+                }
+                
+                // Debounce para evitar muchas solicitudes
+                debounceTimer = setTimeout(async () => {
+                    const airports = await searchAirports(keyword);
+                    displaySuggestions(airports);
+                }, 300);
+            });
+            
+            // Cerrar sugerencias al hacer clic fuera
+            document.addEventListener('click', function(e) {
+                if (!inputElement.contains(e.target) && !suggestionsElement.contains(e.target)) {
+                    suggestionsElement.style.display = 'none';
+                }
+            });
+            
+            // Mostrar sugerencias al hacer clic en el campo
+            inputElement.addEventListener('focus', async function() {
+                const keyword = this.value.trim();
+                if (keyword.length >= 2) {
+                    const airports = await searchAirports(keyword);
+                    displaySuggestions(airports);
+                }
+            });
+        }
+        // Inicializar los selectores de fecha
+        flatpickr("#departure_date", {
+            minDate: "today",
+            dateFormat: "Y-m-d",
+            onChange: function(selectedDates) {
+                const returnDatePicker = document.querySelector("#return_date")._flatpickr;
+                returnDatePicker.set("minDate", selectedDates[0]);
+            }
+        });
+
+        flatpickr("#return_date", {
+            minDate: "today",
+            dateFormat: "Y-m-d"
+        });
+
+        // Manejar el envío del formulario
+        document.getElementById('flightSearchForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = `
+                <div class="text-center p-4">
+                    <div class="spinner-border loading-spinner text-primary" role="status">
+                        <span class="visually-hidden">Buscando vuelos...</span>
+                    </div>
+                    <p class="mt-3 text-muted">Buscando los mejores vuelos para ti...</p>
+                </div>
+            `;
+
+            try {
+                const formData = new FormData(this);
+                const response = await fetch('/search_flights', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+
+                if (response.ok) {
+                    if (data.data && data.data.length > 0) {
+                        // Configuración de paginación
+                        const flightsPerPage = 10;
+                        let currentPage = 1;
+                        const totalFlights = data.data.length;
+                        const totalPages = Math.ceil(totalFlights / flightsPerPage);
+                        
+                        // Función para mostrar los vuelos de la página actual
+                        function showFlightsPage(page) {
+                            const startIndex = (page - 1) * flightsPerPage;
+                            const endIndex = Math.min(startIndex + flightsPerPage, totalFlights);
+                            const flightsToShow = data.data.slice(startIndex, endIndex);
+                            
+                            let html = '<div class="animate-fade-in">';
+                            
+                            // Mostrar información sobre resultados y paginación
+                            html += `
+                                <div class="alert alert-info mb-4">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <i class="fas fa-info-circle me-2"></i>
+                                            Se encontraron <strong>${totalFlights}</strong> vuelos disponibles
+                                        </div>
+                                        <div>
+                                            Mostrando página <strong>${page}</strong> de <strong>${totalPages}</strong>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="alert alert-success mb-4">
+                                    <div class="d-flex align-items-center">
+                                        <i class="fas fa-tag me-2"></i>
+                                        <div>
+                                            <strong>Opciones de tarifas disponibles:</strong>
+                                            <ul class="mb-0 mt-1">
+                                                <li><span class="badge bg-success">Básica</span> - Tarifa económica sin equipaje facturado</li>
+                                                <li><span class="badge bg-primary">Estándar</span> - Incluye equipaje de mano y facturado</li>
+                                                <li><span class="badge" style="background-color: #9b59b6;">Familiar</span> - Incluye selección de asientos juntos y prioridad de embarque</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                            
+                            // Mostrar los vuelos
+                            flightsToShow.forEach(flight => {
+                                const price = flight.price.total;
+                                const currency = flight.price.currency;
+                                
+                                // Obtener la aerolínea principal del vuelo (del primer segmento del itinerario de ida)
+                                let mainAirlineCode = '';
+                                let mainAirlineName = '';
+                                
+                                if (flight.itineraries && flight.itineraries.length > 0 && 
+                                    flight.itineraries[0].segments && flight.itineraries[0].segments.length > 0) {
+                                    const mainSegment = flight.itineraries[0].segments[0];
+                                    mainAirlineCode = mainSegment.carrierCode;
+                                    mainAirlineName = mainSegment.operating ? mainSegment.operating.carrierName || mainAirlineCode : mainAirlineCode;
+                                }
+                                
+                                const itineraries = flight.itineraries.map((itinerary, index) => {
+                                    const segments = itinerary.segments.map(segment => {
+                                        const departureTime = new Date(segment.departure.at).toLocaleString();
+                                        const arrivalTime = new Date(segment.arrival.at).toLocaleString();
+                                        
+                                        // Obtener información de la aerolínea
+                                        const airlineCode = segment.carrierCode;
+                                        const airlineName = segment.operating ? segment.operating.carrierName || airlineCode : airlineCode;
+                                        
+                                        return `
+                                            <div class="flight-segment">
+                                                <div class="d-flex justify-content-between align-items-center">
+                                                    <div>
+                                                        <i class="fas fa-plane me-2"></i>
+                                                        <strong>${segment.departure.iataCode}</strong>
+                                                        <span class="text-muted">(${departureTime})</span>
+                                                    </div>
+                                                    <div>
+                                                        <i class="fas fa-arrow-right mx-2"></i>
+                                                    </div>
+                                                    <div>
+                                                        <strong>${segment.arrival.iataCode}</strong>
+                                                        <span class="text-muted">(${arrivalTime})</span>
+                                                    </div>
+                                                </div>
+                                                <div class="mt-2 d-flex align-items-center">
+                                                    <img src="https://pics.avs.io/80/40/${airlineCode}.png" alt="${airlineName}" class="airline-logo me-2" style="height: 20px; width: auto;">
+                                                    <span class="airline-name">${airlineName} (${airlineCode})</span>
+                                                    ${segment.number ? `<span class="ms-2 text-muted">Vuelo: ${segment.number}</span>` : ''}
+                                                </div>
+                                            </div>
+                                        `;
+                                    }).join('');
+                                    
+                                    return `
+                                        <div class="mt-3">
+                                            <h6 class="mb-2">
+                                                <i class="fas ${index === 0 ? 'fa-plane-departure' : 'fa-plane-arrival'} me-2"></i>
+                                                ${index === 0 ? 'Vuelo de Ida' : 'Vuelo de Regreso'}
+                                            </h6>
+                                            ${segments}
+                                        </div>
+                                    `;
+                                }).join('');
+
+                                // Obtener información de los itinerarios (ida y vuelta)
+                                const outbound = flight.itineraries[0];
+                                const inbound = flight.itineraries.length > 1 ? flight.itineraries[1] : null;
+                                
+                                // Obtener información del primer segmento de ida
+                                const outSegment = outbound.segments[0];
+                                const outDepartureDate = new Date(outSegment.departure.at);
+                                const outArrivalDate = new Date(outbound.segments[outbound.segments.length-1].arrival.at);
+                                const outDepartureTime = outDepartureDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                                const outArrivalTime = outArrivalDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                                const outDepartureFormattedDate = outDepartureDate.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' });
+                                
+                                // Calcular duración del vuelo de ida
+                                const outDuration = Math.round((outArrivalDate - outDepartureDate) / (1000 * 60)); // en minutos
+                                const outDurationHours = Math.floor(outDuration / 60);
+                                const outDurationMinutes = outDuration % 60;
+                                
+                                // Información del vuelo de regreso (si existe)
+                                let inSegment, inDepartureDate, inArrivalDate, inDepartureTime, inArrivalTime, inDepartureFormattedDate;
+                                let inDuration, inDurationHours, inDurationMinutes;
+                                
+                                if (inbound) {
+                                    inSegment = inbound.segments[0];
+                                    inDepartureDate = new Date(inSegment.departure.at);
+                                    inArrivalDate = new Date(inbound.segments[inbound.segments.length-1].arrival.at);
+                                    inDepartureTime = inDepartureDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                                    inArrivalTime = inArrivalDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                                    inDepartureFormattedDate = inDepartureDate.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' });
+                                    
+                                    // Calcular duración del vuelo de regreso
+                                    inDuration = Math.round((inArrivalDate - inDepartureDate) / (1000 * 60)); // en minutos
+                                    inDurationHours = Math.floor(inDuration / 60);
+                                    inDurationMinutes = inDuration % 60;
+                                }
+                                
+                                // Generar HTML para el vuelo
+                                html += `
+                                    <div class="flight-card">
+                                        <!-- Resumen del vuelo de ida -->
+                                        <div class="flight-summary">
+                                            <div class="d-flex align-items-center" style="width: 60%">
+                                                <div class="airline-logo-container me-3">
+                                                    <img src="https://pics.avs.io/80/40/${outSegment.carrierCode}.png" alt="${mainAirlineName}" class="airline-logo" style="height: 30px; width: auto;">
+                                                    <div class="flight-number">${outSegment.carrierCode}${outSegment.number || ''}</div>
+                                                </div>
+                                                
+                                                <div class="flight-route flex-grow-1">
+                                                    <div class="text-center">
+                                                        <div class="flight-date">${outDepartureFormattedDate}</div>
+                                                        <div class="flight-time">${outDepartureTime}</div>
+                                                        <div class="flight-airport">${outSegment.departure.iataCode}</div>
+                                                    </div>
+                                                    
+                                                    <div class="flight-duration">
+                                                        <span>${outDurationHours}h ${outDurationMinutes}m</span>
+                                                        <div class="flight-type">Vuelo directo</div>
+                                                    </div>
+                                                    
+                                                    <div class="text-center">
+                                                        <div class="flight-date">${outDepartureFormattedDate}</div>
+                                                        <div class="flight-time">${outArrivalTime}</div>
+                                                        <div class="flight-airport">${outbound.segments[outbound.segments.length-1].arrival.iataCode}</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="price-options">
+                                                <div class="price-tag" onclick="showPassengerModal('${flight.id}', 'Básica', '${Math.round(parseFloat(price) * 0.75)}', '${currency}')">
+                                                    ${Math.round(parseFloat(price) * 0.75)} ${currency}
+                                                    <small>Básica</small>
+                                                </div>
+                                                <div class="price-tag" onclick="showPassengerModal('${flight.id}', 'Estándar', '${price}', '${currency}')">
+                                                    ${price} ${currency}
+                                                    <small>Estándar</small>
+                                                </div>
+                                                <div class="price-tag" onclick="showPassengerModal('${flight.id}', 'Familiar', '${Math.round(parseFloat(price) * 1.25)}', '${currency}')">
+                                                    ${Math.round(parseFloat(price) * 1.25)} ${currency}
+                                                    <small>Familiar</small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        ${inbound ? `
+                                        <!-- Resumen del vuelo de regreso -->
+                                        <div class="flight-summary">
+                                            <div class="d-flex align-items-center" style="width: 60%">
+                                                <div class="airline-logo-container me-3">
+                                                    <img src="https://pics.avs.io/80/40/${inSegment.carrierCode}.png" alt="${inSegment.carrierCode}" class="airline-logo" style="height: 30px; width: auto;">
+                                                    <div class="flight-number">${inSegment.carrierCode}${inSegment.number || ''}</div>
+                                                </div>
+                                                
+                                                <div class="flight-route flex-grow-1">
+                                                    <div class="text-center">
+                                                        <div class="flight-date">${inDepartureFormattedDate}</div>
+                                                        <div class="flight-time">${inDepartureTime}</div>
+                                                        <div class="flight-airport">${inSegment.departure.iataCode}</div>
+                                                    </div>
+                                                    
+                                                    <div class="flight-duration">
+                                                        <span>${inDurationHours}h ${inDurationMinutes}m</span>
+                                                        <div class="flight-type">Vuelo directo</div>
+                                                    </div>
+                                                    
+                                                    <div class="text-center">
+                                                        <div class="flight-date">${inDepartureFormattedDate}</div>
+                                                        <div class="flight-time">${inArrivalTime}</div>
+                                                        <div class="flight-airport">${inbound.segments[inbound.segments.length-1].arrival.iataCode}</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        ` : ''}
+                                        
+                                        <!-- Botón para mostrar detalles -->
+                                        <div class="text-center py-2">
+                                            <button class="details-btn" onclick="toggleDetails('flight-${flight.id}')">
+                                                <i class="fas fa-chevron-down me-1"></i> Ver detalles
+                                            </button>
+                                        </div>
+                                        
+                                        <!-- Detalles del vuelo (inicialmente ocultos) -->
+                                        <div id="flight-${flight.id}" class="flight-details" style="display: none;">
+                                            ${itineraries}
+                                        </div>
+                                    </div>`;
+                            });
+                            
+                            // Añadir controles de paginación
+                            if (totalPages > 1) {
+                                html += `
+                                    <nav aria-label="Navegación de páginas">
+                                        <ul class="pagination justify-content-center">
+                                            <li class="page-item ${page === 1 ? 'disabled' : ''}">
+                                                <a class="page-link" href="#" data-page="${page-1}">
+                                                    <i class="fas fa-chevron-left"></i> Anterior
+                                                </a>
+                                            </li>
+                                `;
+                                            
+                                // Mostrar números de página (máximo 5)
+                                const startPage = Math.max(1, page - 2);
+                                const endPage = Math.min(totalPages, startPage + 4);
+                                
+                                for (let i = startPage; i <= endPage; i++) {
+                                    html += `
+                                        <li class="page-item ${i === page ? 'active' : ''}">
+                                            <a class="page-link" href="#" data-page="${i}">${i}</a>
+                                        </li>
+                                    `;
+                                }
+                                            
+                                html += `
+                                            <li class="page-item ${page === totalPages ? 'disabled' : ''}">
+                                                <a class="page-link" href="#" data-page="${page+1}">
+                                                    Siguiente <i class="fas fa-chevron-right"></i>
+                                                </a>
+                                            </li>
+                                        </ul>
+                                    </nav>
+                                `;
+                            }
+                            
+                            html += '</div>';
+                            resultsDiv.innerHTML = html;
+                            
+                            // Añadir event listeners a los controles de paginación
+                            document.querySelectorAll('.pagination .page-link').forEach(link => {
+                                link.addEventListener('click', function(e) {
+                                    e.preventDefault();
+                                    const pageNum = parseInt(this.getAttribute('data-page'));
+                                    if (pageNum >= 1 && pageNum <= totalPages) {
+                                        currentPage = pageNum;
+                                        showFlightsPage(currentPage);
+                                        // Scroll hacia arriba para ver los nuevos resultados
+                                        window.scrollTo({top: resultsDiv.offsetTop - 20, behavior: 'smooth'});
+                                    }
+                                });
+                            });
+                        }
+                        
+                        // Mostrar la primera página de resultados
+                        showFlightsPage(currentPage);
+                    } else {
+                        resultsDiv.innerHTML = `
+                            <div class="alert alert-info animate-fade-in" role="alert">
+                                <i class="fas fa-info-circle me-2"></i>
+                                No se encontraron vuelos para esta búsqueda.
+                            </div>`;
+                    }
+                } else {
+                    const errorMessage = data.error || data.errors?.[0]?.detail || 'Error en la búsqueda';
+                    resultsDiv.innerHTML = `
+                        <div class="alert alert-danger animate-fade-in" role="alert">
+                            <i class="fas fa-exclamation-circle me-2"></i>
+                            ${errorMessage}
+                        </div>`;
+                }
+            } catch (error) {
+                resultsDiv.innerHTML = `
+                    <div class="alert alert-danger animate-fade-in" role="alert">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Error al procesar la solicitud
+                    </div>`;
+            }
+        });
+    </script>
+    <!-- Modal para datos de pasajeros -->
+    <div class="modal fade" id="passengerModal" tabindex="-1" aria-labelledby="passengerModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="passengerModalLabel">Datos de Pasajeros</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-info mb-4">
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <div>
+                                <span>Has seleccionado la tarifa <strong id="selectedFareType"></strong> por <strong id="selectedFarePrice"></strong></span>
+                                <div class="mt-2">Por favor, completa los datos de los pasajeros para continuar.</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <form id="passengerForm">
+                        <input type="hidden" id="flightId" name="flightId">
+                        <input type="hidden" id="fareType" name="fareType">
+                        <input type="hidden" id="farePrice" name="farePrice">
+                        
+                        <div id="adultPassengers">
+                            <h5 class="mb-3">Adultos</h5>
+                            <div class="passenger-container" id="adult1">
+                                <div class="card mb-3">
+                                    <div class="card-header bg-light">
+                                        <strong>Adulto 1</strong>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row g-3">
+                                            <div class="col-md-6">
+                                                <label class="form-label">Nombre</label>
+                                                <input type="text" class="form-control" name="adultFirstName1" required>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="form-label">Apellidos</label>
+                                                <input type="text" class="form-control" name="adultLastName1" required>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="form-label">Fecha de Nacimiento</label>
+                                                <input type="date" class="form-control" name="adultBirthDate1" required>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="form-label">Documento de Identidad</label>
+                                                <input type="text" class="form-control" name="adultDocument1" required>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div id="childPassengers" class="mt-4">
+                            <h5 class="mb-3">Niños (2-17 años)</h5>
+                            <div id="childrenContainer"></div>
+                        </div>
+                        
+                        <div id="infantPassengers" class="mt-4">
+                            <h5 class="mb-3">Infantes (0-2 años)</h5>
+                            <div id="infantsContainer"></div>
+                        </div>
+                        
+                        <div class="mt-4">
+                            <h5 class="mb-3">Datos de Contacto</h5>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">Email</label>
+                                    <input type="email" class="form-control" name="contactEmail" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Teléfono</label>
+                                    <input type="tel" class="form-control" name="contactPhone" required>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-4">
+                            <h5 class="mb-3">Cargo de Servicio</h5>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">Monto adicional por servicio</label>
+                                    <div class="input-group">
+                                        <select class="form-select" id="serviceFee-currency" style="max-width: 100px;" onchange="updateTotalPrice()">
+                                            <option value="USD" selected>USD</option>
+                                            <option value="original" id="original-currency-option">EUR</option>
+                                        </select>
+                                        <input type="number" class="form-control" id="serviceFee" name="serviceFee" min="0" step="0.01" value="0" onchange="updateTotalPrice()">
+                                    </div>
+                                    <small class="form-text text-muted">Cargo opcional para subagentes</small>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Precio Total (con cargo de servicio)</label>
+                                    <div class="alert alert-primary p-2 mb-0">
+                                        <strong id="totalPriceWithFee"></strong>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" onclick="processBooking()">Continuar con la Reserva</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Función para mostrar el modal de pasajeros
+        function showPassengerModal(flightId, fareType, farePrice, currency) {
+            // Establecer los valores seleccionados
+            document.getElementById('flightId').value = flightId;
+            document.getElementById('fareType').value = fareType;
+            document.getElementById('farePrice').value = farePrice;
+            
+            // Actualizar la información en el modal
+            document.getElementById('selectedFareType').textContent = fareType;
+            document.getElementById('selectedFarePrice').textContent = `${farePrice} ${currency}`;
+            document.getElementById('original-currency-option').value = currency;
+            document.getElementById('original-currency-option').textContent = currency;
+            document.getElementById('farePrice').setAttribute('data-currency', currency);
+            updateTotalPrice();
+            
+            // Obtener el número de pasajeros del formulario de búsqueda
+            const adults = Math.min(parseInt(document.getElementById('adults').value) || 1, 9); // Máximo 9 adultos
+            const children = parseInt(document.getElementById('children').value) || 0;
+            const infants = parseInt(document.getElementById('infants').value) || 0;
+            
+            // Generar formularios para adultos adicionales
+            const adultContainer = document.getElementById('adultPassengers');
+            let adultHTML = `
+                <h5 class="mb-3">Adultos</h5>
+                <div class="passenger-container" id="adult1">
+                    <div class="card mb-3">
+                        <div class="card-header bg-light">
+                            <strong>Adulto 1</strong>
+                        </div>
+                        <div class="card-body">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">Nombre</label>
+                                    <input type="text" class="form-control" name="adultFirstName1" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Apellidos</label>
+                                    <input type="text" class="form-control" name="adultLastName1" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Fecha de Nacimiento</label>
+                                    <input type="date" class="form-control" name="adultBirthDate1" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Documento de Identidad</label>
+                                    <input type="text" class="form-control" name="adultDocument1" required>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Añadir formularios para adultos adicionales
+            for (let i = 2; i <= adults; i++) {
+                adultHTML += `
+                    <div class="passenger-container" id="adult${i}">
+                        <div class="card mb-3">
+                            <div class="card-header bg-light">
+                                <strong>Adulto ${i}</strong>
+                            </div>
+                            <div class="card-body">
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label">Nombre</label>
+                                        <input type="text" class="form-control" name="adultFirstName${i}" required>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Apellidos</label>
+                                        <input type="text" class="form-control" name="adultLastName${i}" required>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Fecha de Nacimiento</label>
+                                        <input type="date" class="form-control" name="adultBirthDate${i}" required>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Documento de Identidad</label>
+                                        <input type="text" class="form-control" name="adultDocument${i}" required>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+            adultContainer.innerHTML = adultHTML;
+            
+            // Generar formularios para niños
+            const childrenContainer = document.getElementById('childrenContainer');
+            let childrenHTML = '';
+            
+            if (children > 0) {
+                for (let i = 1; i <= children; i++) {
+                    childrenHTML += `
+                        <div class="passenger-container" id="child${i}">
+                            <div class="card mb-3">
+                                <div class="card-header bg-light">
+                                    <strong>Niño ${i}</strong>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row g-3">
+                                        <div class="col-md-6">
+                                            <label class="form-label">Nombre</label>
+                                            <input type="text" class="form-control" name="childFirstName${i}" required>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">Apellidos</label>
+                                            <input type="text" class="form-control" name="childLastName${i}" required>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">Fecha de Nacimiento</label>
+                                            <input type="date" class="form-control" name="childBirthDate${i}" required>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">Documento de Identidad</label>
+                                            <input type="text" class="form-control" name="childDocument${i}" required>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+            } else {
+                childrenHTML = '<p class="text-muted">No hay niños en esta reserva.</p>';
+            }
+            childrenContainer.innerHTML = childrenHTML;
+            
+            // Generar formularios para infantes
+            const infantsContainer = document.getElementById('infantsContainer');
+            let infantsHTML = '';
+            
+            if (infants > 0) {
+                for (let i = 1; i <= infants; i++) {
+                    infantsHTML += `
+                        <div class="passenger-container" id="infant${i}">
+                            <div class="card mb-3">
+                                <div class="card-header bg-light">
+                                    <strong>Infante ${i}</strong>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row g-3">
+                                        <div class="col-md-6">
+                                            <label class="form-label">Nombre</label>
+                                            <input type="text" class="form-control" name="infantFirstName${i}" required>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">Apellidos</label>
+                                            <input type="text" class="form-control" name="infantLastName${i}" required>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">Fecha de Nacimiento</label>
+                                            <input type="date" class="form-control" name="infantBirthDate${i}" required>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">Adulto Responsable</label>
+                                            <select class="form-select" name="infantResponsible${i}" required>
+                                                <option value="" selected disabled>Seleccionar adulto</option>
+                                                ${Array.from({length: adults}, (_, i) => `<option value="adult${i+1}">Adulto ${i+1}</option>`).join('')}
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+            } else {
+                infantsHTML = '<p class="text-muted">No hay infantes en esta reserva.</p>';
+            }
+            infantsContainer.innerHTML = infantsHTML;
+            
+            // Mostrar el modal
+            const passengerModal = new bootstrap.Modal(document.getElementById('passengerModal'));
+            passengerModal.show();
+        }
+        
+        // Función para actualizar el precio total con el cargo de servicio
+        function updateTotalPrice() {
+            const farePrice = parseFloat(document.getElementById('farePrice').value) || 0;
+            const serviceFee = parseFloat(document.getElementById('serviceFee').value) || 0;
+            const originalCurrency = document.getElementById('farePrice').getAttribute('data-currency') || 'EUR';
+            const feeCurrency = document.getElementById('serviceFee-currency').value;
+            
+            // Si la moneda del cargo es USD y la moneda original es diferente, convertir
+            let convertedFee = serviceFee;
+            let displayCurrency = originalCurrency;
+            
+            if (feeCurrency === 'USD' && originalCurrency !== 'USD') {
+                // Usar una tasa de cambio aproximada (esto debería ser dinámico en producción)
+                const usdToEurRate = 0.92; // 1 USD = 0.92 EUR aproximadamente
+                convertedFee = serviceFee * usdToEurRate;
+                displayCurrency = originalCurrency;
+            } else if (feeCurrency === 'original') {
+                displayCurrency = originalCurrency;
+            }
+            
+            const totalPrice = farePrice + convertedFee;
+            
+            // Mostrar el cargo de servicio en su moneda original
+            const feeDisplay = feeCurrency === 'USD' ? `${serviceFee.toFixed(2)} USD` : `${serviceFee.toFixed(2)} ${originalCurrency}`;
+            document.getElementById('totalPriceWithFee').innerHTML = `${totalPrice.toFixed(2)} ${displayCurrency} <small class="text-muted">(Cargo: ${feeDisplay})</small>`;
+        }
+        
+        // Función para procesar la reserva
+        function processBooking() {
+            // Mostrar indicador de carga en el botón
+            const confirmBtn = document.querySelector('.modal-footer .btn-primary');
+            confirmBtn.disabled = true;
+            confirmBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Procesando...';
+            
+            const formData = new FormData(document.getElementById('passengerForm'));
+            const flightId = formData.get('flightId');
+            const fareType = formData.get('fareType');
+            const farePrice = formData.get('farePrice');
+            const serviceFee = formData.get('serviceFee') || '0';
+            const feeCurrency = document.getElementById('serviceFee-currency').value;
+            
+            // Guardar datos de pasajeros antes de cerrar el modal
+            const passengerData = {
+                adults: [],
+                children: [],
+                infants: []
+            };
+            
+            // Guardar datos de adultos
+            const adultCount = parseInt(document.getElementById('adults').value) || 1;
+            for (let i = 1; i <= adultCount; i++) {
+                passengerData.adults.push({
+                    firstName: document.querySelector(`input[name="adultFirstName${i}"]`).value,
+                    lastName: document.querySelector(`input[name="adultLastName${i}"]`).value
+                });
+            }
+            
+            // Guardar datos de niños
+            const childCount = parseInt(document.getElementById('children').value) || 0;
+            for (let i = 1; i <= childCount; i++) {
+                if (document.querySelector(`input[name="childFirstName${i}"]`)) {
+                    passengerData.children.push({
+                        firstName: document.querySelector(`input[name="childFirstName${i}"]`).value,
+                        lastName: document.querySelector(`input[name="childLastName${i}"]`).value
+                    });
+                }
+            }
+            
+            // Guardar datos de infantes
+            const infantCount = parseInt(document.getElementById('infants').value) || 0;
+            for (let i = 1; i <= infantCount; i++) {
+                if (document.querySelector(`input[name="infantFirstName${i}"]`)) {
+                    passengerData.infants.push({
+                        firstName: document.querySelector(`input[name="infantFirstName${i}"]`).value,
+                        lastName: document.querySelector(`input[name="infantFirstName${i}"]`).value
+                    });
+                }
+            }
+            
+            // Guardar email de contacto
+            const contactEmail = document.querySelector('input[name="contactEmail"]').value;
+            
+            // Añadir la moneda del cargo de servicio al formulario
+            formData.append('currency', document.getElementById('farePrice').getAttribute('data-currency') || 'EUR');
+            formData.append('serviceFeeCurrency', feeCurrency);
+            formData.append('adults', document.getElementById('adults').value || 1);
+            formData.append('children', document.getElementById('children').value || 0);
+            formData.append('infants', document.getElementById('infants').value || 0);
+            
+            // Enviar los datos al servidor para crear la reserva real
+            fetch('/create_booking', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Respuesta del servidor:', data);
+                // Cerrar el modal
+                const passengerModal = bootstrap.Modal.getInstance(document.getElementById('passengerModal'));
+                passengerModal.hide();
+                
+                // Calcular precio total con cargo de servicio (para mostrar en la UI)
+                const baseFare = parseFloat(farePrice);
+                const fee = parseFloat(serviceFee);
+                const originalCurrency = formData.get('currency');
+                
+                // Si la moneda del cargo es USD y la moneda original es diferente, convertir
+                let convertedFee = fee;
+                let displayCurrency = originalCurrency;
+                let feeDisplay = `${fee.toFixed(2)} ${originalCurrency}`;
+                
+                if (feeCurrency === 'USD' && originalCurrency !== 'USD') {
+                    // Usar una tasa de cambio aproximada
+                    const usdToEurRate = 0.92; // 1 USD = 0.92 EUR aproximadamente
+                    convertedFee = fee * usdToEurRate;
+                    displayCurrency = originalCurrency;
+                    feeDisplay = `${fee.toFixed(2)} USD (≈ ${convertedFee.toFixed(2)} ${originalCurrency})`;
+                }
+                
+                const totalPrice = baseFare + convertedFee;
+                
+                // Mostrar resultados
+                const resultsDiv = document.getElementById('results');
+                
+                if (data && data.success === true) {
+                    // Extraer información de vuelo del flight_id
+                    const flightSegments = flightId.split('-');
+                    const origin = flightSegments[0] || 'LAX';
+                    const destination = flightSegments[1] || 'GDL';
+                    
+                    // Formatear fecha para mostrar
+                    const departureDate = document.getElementById('departure_date').value;
+                    const returnDate = document.getElementById('return_date').value;
+                    
+                    // Crear lista de pasajeros para mostrar
+                    let passengerList = '';
+                    
+                    // Adultos
+                    passengerData.adults.forEach((adult, index) => {
+                        passengerList += `<li class="list-group-item"><i class="fas fa-user me-2"></i>${adult.firstName} ${adult.lastName} <span class="badge bg-primary">Adulto</span></li>`;
+                    });
+                    
+                    // Niños
+                    passengerData.children.forEach((child, index) => {
+                        passengerList += `<li class="list-group-item"><i class="fas fa-child me-2"></i>${child.firstName} ${child.lastName} <span class="badge bg-info">Niño</span></li>`;
+                    });
+                    
+                    // Infantes
+                    passengerData.infants.forEach((infant, index) => {
+                        passengerList += `<li class="list-group-item"><i class="fas fa-baby me-2"></i>${infant.firstName} ${infant.lastName} <span class="badge bg-warning">Infante</span></li>`;
+                    });
+                    
+                    // Mostrar mensaje de éxito con el ID de reserva y detalles
+                    const resultsDiv = document.getElementById('results');
+                    resultsDiv.innerHTML = `
+                        <div class="card border-success mb-4 animate-fade-in">
+                            <div class="card-header bg-success text-white">
+                                <h4 class="mb-0"><i class="fas fa-check-circle me-2"></i>¡Reserva Confirmada!</h4>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6 mb-4">
+                                        <div class="card h-100">
+                                            <div class="card-header bg-primary text-white">
+                                                <h5 class="mb-0"><i class="fas fa-ticket-alt me-2"></i>Código de Reserva (PNR)</h5>
+                                            </div>
+                                            <div class="card-body text-center">
+                                                <h2 class="card-title" style="letter-spacing: 5px; font-family: monospace; font-weight: bold;">${data.pnr}</h2>
+                                                <p class="card-text text-muted">Guarda este código para futuras referencias</p>
+                                                <p class="small text-muted">ID de reserva: ${data.booking_id}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="col-md-6 mb-4">
+                                        <div class="card h-100">
+                                            <div class="card-header bg-info text-white">
+                                                <h5 class="mb-0"><i class="fas fa-plane me-2"></i>Detalles del Vuelo</h5>
+                                            </div>
+                                            <div class="card-body">
+                                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                                    <div class="text-center">
+                                                        <h5>${origin}</h5>
+                                                        <p class="text-muted mb-0">Origen</p>
+                                                    </div>
+                                                    <div class="text-center">
+                                                        <i class="fas fa-plane" style="font-size: 1.5rem;"></i>
+                                                    </div>
+                                                    <div class="text-center">
+                                                        <h5>${destination}</h5>
+                                                        <p class="text-muted mb-0">Destino</p>
+                                                    </div>
+                                                </div>
+                                                <div class="row mt-3">
+                                                    <div class="col-6">
+                                                        <p><strong>Ida:</strong> ${departureDate}</p>
+                                                    </div>
+                                                    <div class="col-6">
+                                                        <p><strong>Vuelta:</strong> ${returnDate}</p>
+                                                    </div>
+                                                </div>
+                                                <p><strong>Tarifa:</strong> ${fareType.toUpperCase()}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6 mb-4">
+                                        <div class="card">
+                                            <div class="card-header bg-secondary text-white">
+                                                <h5 class="mb-0"><i class="fas fa-users me-2"></i>Pasajeros</h5>
+                                            </div>
+                                            <ul class="list-group list-group-flush">
+                                                ${passengerList}
+                                            </ul>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="col-md-6 mb-4">
+                                        <div class="card">
+                                            <div class="card-header bg-success text-white">
+                                                <h5 class="mb-0"><i class="fas fa-dollar-sign me-2"></i>Resumen de Pago</h5>
+                                            </div>
+                                            <div class="card-body">
+                                                <div class="d-flex justify-content-between mb-2">
+                                                    <span>Precio base:</span>
+                                                    <strong>${baseFare.toFixed(2)} ${originalCurrency}</strong>
+                                                </div>
+                                                ${fee > 0 ? `
+                                                <div class="d-flex justify-content-between mb-2">
+                                                    <span>Cargo de servicio:</span>
+                                                    <strong>${feeDisplay}</strong>
+                                                </div>` : ''}
+                                                <hr>
+                                                <div class="d-flex justify-content-between">
+                                                    <h5>Total:</h5>
+                                                    <h5>${totalPrice.toFixed(2)} ${displayCurrency}</h5>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="alert alert-info mt-3">
+                                    <i class="fas fa-envelope me-2"></i> En breve recibirás un correo electrónico con los detalles de tu reserva a <strong>${contactEmail}</strong>
+                                </div>
+                                ${data.amadeus_message ? `
+                                <div class="alert alert-warning mt-3">
+                                    <i class="fas fa-info-circle me-2"></i> <strong>Nota:</strong> ${data.amadeus_message}
+                                </div>
+                                ` : ''}
+                            </div>
+                            <div class="card-footer text-center">
+                                <button class="btn btn-primary" onclick="window.location.reload()">
+                                    <i class="fas fa-search me-2"></i>Realizar Nueva Búsqueda
+                                </button>
+                                <button class="btn btn-outline-secondary ms-2" onclick="window.print()">
+                                    <i class="fas fa-print me-2"></i>Imprimir Confirmación
+                                </button>
+                                <button class="btn btn-outline-primary ms-2" onclick="sendConfirmationEmail('${contactEmail}', '${data.pnr}')">
+                                    <i class="fas fa-envelope me-2"></i>Enviar por Email
+                                </button>
+                                <div class="mt-3">
+                                    <p class="text-muted">¿Qué deseas hacer con tu reserva?</p>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    // Mostrar mensaje de error
+                    const resultsDiv = document.getElementById('results');
+                    
+                    // Mostrar detalles del error en la consola para depuración
+                    console.error('Error en la respuesta:', data);
+                    
+                    resultsDiv.innerHTML = `
+                        <div class="alert alert-danger animate-fade-in" role="alert">
+                            <h4 class="alert-heading"><i class="fas fa-exclamation-triangle me-2"></i>Error en la Reserva</h4>
+                            <p>${data && data.error ? data.error : 'Ha ocurrido un error al procesar tu reserva. Por favor, inténtalo de nuevo.'}</p>
+                            ${data && data.details ? `<div class="small text-muted mt-2">Detalles: ${data.details}</div>` : ''}
+                            <div class="text-center mt-3">
+                                <button class="btn btn-outline-danger" onclick="window.location.reload()">
+                                    <i class="fas fa-redo me-2"></i>Intentar Nuevamente
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                // Scroll hacia arriba para ver el mensaje
+                window.scrollTo({top: resultsDiv.offsetTop - 20, behavior: 'smooth'});
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                // Mostrar mensaje de error
+                const resultsDiv = document.getElementById('results');
+                resultsDiv.innerHTML = `
+                    <div class="alert alert-danger animate-fade-in" role="alert">
+                        <h4 class="alert-heading"><i class="fas fa-exclamation-triangle me-2"></i>Error en la Reserva</h4>
+                        <p>Ha ocurrido un error de conexión. Por favor, verifica tu conexión a internet e inténtalo de nuevo.</p>
+                        <div class="small text-muted mt-2">Error: ${error.message || 'Error desconocido'}</div>
+                        <div class="text-center mt-3">
+                            <button class="btn btn-outline-danger" onclick="window.location.reload()">
+                                <i class="fas fa-redo me-2"></i>Intentar Nuevamente
+                            </button>
+                        </div>
+                    </div>
+                `;
+                
+                // Scroll hacia arriba para ver el mensaje
+                window.scrollTo({top: resultsDiv.offsetTop - 20, behavior: 'smooth'});
+            })
+            .finally(() => {
+                // Restaurar el botón
+                confirmBtn.disabled = false;
+                confirmBtn.innerHTML = 'Confirmar Reserva';
+            });
+        }
+        
+        // Inicializar autocompletado para campos de origen y destino
+        document.addEventListener('DOMContentLoaded', function() {
+            setupAirportAutocomplete('origin', 'origin_suggestions', 'origin_code');
+            setupAirportAutocomplete('destination', 'destination_suggestions', 'destination_code');
+        });
+        
+        // Función para enviar email de confirmación
+        function sendConfirmationEmail(email, pnr) {
+            console.log(`Preparando envío de email para PNR: ${pnr}, Email inicial: ${email}`);
+            
+            // Mostrar un modal de confirmación
+            const emailModal = document.createElement('div');
+            emailModal.className = 'modal fade';
+            emailModal.id = 'emailConfirmationModal';
+            emailModal.setAttribute('tabindex', '-1');
+            emailModal.setAttribute('aria-labelledby', 'emailConfirmationModalLabel');
+            emailModal.setAttribute('aria-hidden', 'true');
+            
+            // Crear un formulario para el envío de correo
+            emailModal.innerHTML = `
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="emailConfirmationModalLabel">Enviar Confirmación por Email</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <form id="emailForm">
+                            <input type="hidden" name="pnr" value="${pnr}">
+                            <div class="modal-body">
+                                <div class="mb-3">
+                                    <label for="emailInput" class="form-label">Dirección de correo electrónico</label>
+                                    <input type="email" class="form-control" id="emailInput" name="email" value="${email}" placeholder="Ingresa tu email" required>
+                                    <div class="form-text">Se enviará un email con los detalles de tu reserva a esta dirección.</div>
+                                </div>
+                                <div class="form-check mt-3">
+                                    <input class="form-check-input" type="checkbox" id="includeItinerary" name="include_itinerary" checked>
+                                    <label class="form-check-label" for="includeItinerary">
+                                        Incluir itinerario completo
+                                    </label>
+                                </div>
+                                <div class="form-check mt-2">
+                                    <input class="form-check-input" type="checkbox" id="includePDF" name="include_pdf" checked>
+                                    <label class="form-check-label" for="includePDF">
+                                        Adjuntar confirmación en PDF
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-paper-plane me-2"></i>Enviar Email
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(emailModal);
+            const modal = new bootstrap.Modal(document.getElementById('emailConfirmationModal'));
+            modal.show();
+            
+            // Configurar el envío del formulario
+            document.getElementById('emailForm').addEventListener('submit', function(event) {
+                event.preventDefault();
+                
+                // Obtener los datos del formulario
+                const emailValue = document.getElementById('emailInput').value;
+                const includeItinerary = document.getElementById('includeItinerary').checked;
+                const includePDF = document.getElementById('includePDF').checked;
+                
+                console.log(`Enviando email a: ${emailValue} para PNR: ${pnr}`);
+                
+                // Cambiar el botón a estado de carga
+                const sendButton = document.querySelector('#emailConfirmationModal .btn-primary');
+                sendButton.disabled = true;
+                sendButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Enviando...';
+                
+                // Crear los datos del formulario
+                const formData = new FormData();
+                formData.append('pnr', pnr);
+                formData.append('email', emailValue);
+                formData.append('include_itinerary', includeItinerary);
+                formData.append('include_pdf', includePDF);
+                
+                // Enviar la solicitud al servidor
+                fetch('/send_booking_email', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    // Cerrar el modal de confirmación
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('emailConfirmationModal'));
+                    modal.hide();
+                    
+                    // Eliminar el modal del DOM después de cerrarlo
+                    document.getElementById('emailConfirmationModal').addEventListener('hidden.bs.modal', function () {
+                        this.remove();
+                        
+                        // Mostrar notificación según el resultado
+                        const notification = document.createElement('div');
+                        notification.className = 'position-fixed bottom-0 end-0 p-3';
+                        notification.style.zIndex = '5';
+                        
+                        if (data.success) {
+                            notification.innerHTML = `
+                                <div class="toast show" role="alert" aria-live="assertive" aria-atomic="true">
+                                    <div class="toast-header bg-success text-white">
+                                        <i class="fas fa-check-circle me-2"></i>
+                                        <strong class="me-auto">Email Enviado</strong>
+                                        <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+                                    </div>
+                                    <div class="toast-body">
+                                        Se ha enviado la confirmación de reserva a ${emailValue}.
+                                        <div class="mt-2 pt-2 border-top">
+                                            <small class="text-muted">Código de reserva: ${pnr}</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                        } else {
+                            notification.innerHTML = `
+                                <div class="toast show" role="alert" aria-live="assertive" aria-atomic="true">
+                                    <div class="toast-header bg-danger text-white">
+                                        <i class="fas fa-exclamation-circle me-2"></i>
+                                        <strong class="me-auto">Error</strong>
+                                        <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+                                    </div>
+                                    <div class="toast-body">
+                                        ${data.error}
+                                    </div>
+                                </div>
+                            `;
+                        }
+                        
+                        document.body.appendChild(notification);
+                        
+                        // Eliminar la notificación después de 5 segundos
+                        setTimeout(() => {
+                            notification.remove();
+                        }, 5000);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    sendButton.disabled = false;
+                    sendButton.innerHTML = '<i class="fas fa-paper-plane me-2"></i>Enviar Email';
+                    
+                    // Mostrar mensaje de error
+                    alert('Error al enviar el email. Por favor, inténtalo de nuevo más tarde.');
+                });
+            });
+        }
+        
+        // La función confirmSendEmail ya no se utiliza, la lógica se ha integrado en sendConfirmationEmail
+        
+        // Función para mostrar el modal de búsqueda por PNR
+        function showPnrSearchModal() {
+            // Crear el modal si no existe
+            if (!document.getElementById('pnrSearchModal')) {
+                const modal = document.createElement('div');
+                modal.className = 'modal fade';
+                modal.id = 'pnrSearchModal';
+                modal.setAttribute('tabindex', '-1');
+                modal.setAttribute('aria-labelledby', 'pnrSearchModalLabel');
+                modal.setAttribute('aria-hidden', 'true');
+                
+                modal.innerHTML = `
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content">
+                            <div class="modal-header bg-primary text-white">
+                                <h5 class="modal-title" id="pnrSearchModalLabel"><i class="fas fa-ticket-alt me-2"></i>Consultar Reserva</h5>
+                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <form id="pnrSearchForm" onsubmit="searchBookingByPnr(event)">
+                                    <div class="mb-3">
+                                        <label for="pnrInput" class="form-label">Código de Reserva (PNR)</label>
+                                        <input type="text" class="form-control form-control-lg" id="pnrInput" placeholder="Ingresa tu código de 6 caracteres" required pattern="[A-Za-z0-9]{6}" maxlength="6">
+                                        <div class="form-text">El código PNR es un identificador único de 6 caracteres que recibiste al hacer tu reserva.</div>
+                                    </div>
+                                    <div class="d-grid gap-2">
+                                        <button type="submit" class="btn btn-primary btn-lg"><i class="fas fa-search me-2"></i>Buscar Reserva</button>
+                                    </div>
+                                </form>
+                                <div id="pnrSearchResult" class="mt-3" style="display: none;"></div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                document.body.appendChild(modal);
+            }
+            
+            // Mostrar el modal
+            const pnrModal = new bootstrap.Modal(document.getElementById('pnrSearchModal'));
+            pnrModal.show();
+        }
+        
+        // Función para buscar reserva por PNR
+        function searchBookingByPnr(event) {
+            event.preventDefault();
+            
+            const pnr = document.getElementById('pnrInput').value.trim().toUpperCase();
+            if (!pnr) return;
+            
+            // Mostrar indicador de carga
+            const searchResult = document.getElementById('pnrSearchResult');
+            searchResult.style.display = 'block';
+            searchResult.innerHTML = `
+                <div class="text-center p-4">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Buscando...</span>
+                    </div>
+                    <p class="mt-2">Buscando reserva...</p>
+                </div>
+            `;
+            
+            // Crear FormData para enviar al servidor
+            const formData = new FormData();
+            formData.append('pnr', pnr);
+            
+            // Enviar solicitud al servidor
+            fetch('/find_booking', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Ocultar el formulario de búsqueda
+                document.getElementById('pnrSearchForm').style.display = 'none';
+                
+                if (data.success) {
+                    // Extraer información de vuelo del flight_id
+                    const origin = data.details.origin || 'N/A';
+                    const destination = data.details.destination || 'N/A';
+                    
+                    // Formatear datos de pasajeros
+                    let passengerList = '';
+                    
+                    // Adultos
+                    if (data.details.passengers && data.details.passengers.adults) {
+                        data.details.passengers.adults.forEach((adult, index) => {
+                            passengerList += `<li class="list-group-item"><i class="fas fa-user me-2"></i>${adult.firstName} ${adult.lastName} <span class="badge bg-primary">Adulto</span></li>`;
+                        });
+                    }
+                    
+                    // Niños
+                    if (data.details.passengers && data.details.passengers.children) {
+                        data.details.passengers.children.forEach((child, index) => {
+                            passengerList += `<li class="list-group-item"><i class="fas fa-child me-2"></i>${child.firstName} ${child.lastName} <span class="badge bg-info">Niño</span></li>`;
+                        });
+                    }
+                    
+                    // Infantes
+                    if (data.details.passengers && data.details.passengers.infants) {
+                        data.details.passengers.infants.forEach((infant, index) => {
+                            passengerList += `<li class="list-group-item"><i class="fas fa-baby me-2"></i>${infant.firstName} ${infant.lastName} <span class="badge bg-warning">Infante</span></li>`;
+                        });
+                    }
+                    
+                    // Calcular precio total con cargo de servicio (para mostrar en la UI)
+                    const baseFare = parseFloat(data.details.fare_price);
+                    const fee = parseFloat(data.details.service_fee || 0);
+                    const originalCurrency = data.details.currency;
+                    const feeCurrency = data.details.service_fee_currency || originalCurrency;
+                    
+                    // Si la moneda del cargo es USD y la moneda original es diferente, convertir
+                    let convertedFee = fee;
+                    let displayCurrency = originalCurrency;
+                    let feeDisplay = `${fee.toFixed(2)} ${originalCurrency}`;
+                    
+                    if (feeCurrency === 'USD' && originalCurrency !== 'USD') {
+                        // Usar una tasa de cambio aproximada
+                        const usdToEurRate = 0.92; // 1 USD = 0.92 EUR aproximadamente
+                        convertedFee = fee * usdToEurRate;
+                        displayCurrency = originalCurrency;
+                        feeDisplay = `${fee.toFixed(2)} USD (≈ ${convertedFee.toFixed(2)} ${originalCurrency})`;
+                    }
+                    
+                    const totalPrice = baseFare + convertedFee;
+                    
+                    // Mostrar resultado exitoso
+                    searchResult.innerHTML = `
+                        <div class="card border-success mb-4 animate-fade-in">
+                            <div class="card-header bg-success text-white">
+                                <h4 class="mb-0"><i class="fas fa-check-circle me-2"></i>Reserva Encontrada</h4>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6 mb-4">
+                                        <div class="card h-100">
+                                            <div class="card-header bg-primary text-white">
+                                                <h5 class="mb-0"><i class="fas fa-ticket-alt me-2"></i>Código de Reserva (PNR)</h5>
+                                            </div>
+                                            <div class="card-body text-center">
+                                                <h2 class="card-title" style="letter-spacing: 5px; font-family: monospace; font-weight: bold;">${data.pnr}</h2>
+                                                <p class="card-text text-muted">Guarda este código para futuras referencias</p>
+                                                <p class="small text-muted">ID de reserva: ${data.booking_id}</p>
+                                                <p class="small text-muted">Fecha: ${data.details.created_at}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="col-md-6 mb-4">
+                                        <div class="card h-100">
+                                            <div class="card-header bg-info text-white">
+                                                <h5 class="mb-0"><i class="fas fa-plane me-2"></i>Detalles del Vuelo</h5>
+                                            </div>
+                                            <div class="card-body">
+                                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                                    <div class="text-center">
+                                                        <h5>${origin}</h5>
+                                                        <p class="text-muted mb-0">Origen</p>
+                                                    </div>
+                                                    <div class="text-center">
+                                                        <i class="fas fa-plane" style="font-size: 1.5rem;"></i>
+                                                    </div>
+                                                    <div class="text-center">
+                                                        <h5>${destination}</h5>
+                                                        <p class="text-muted mb-0">Destino</p>
+                                                    </div>
+                                                </div>
+                                                <hr>
+                                                <div class="d-flex justify-content-between">
+                                                    <span>Estado:</span>
+                                                    <span class="badge bg-success">Confirmado</span>
+                                                </div>
+                                                <div class="d-flex justify-content-between mt-2">
+                                                    <span>Tipo de tarifa:</span>
+                                                    <strong>${data.details.fare_type}</strong>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6 mb-4">
+                                        <div class="card h-100">
+                                            <div class="card-header bg-secondary text-white">
+                                                <h5 class="mb-0"><i class="fas fa-users me-2"></i>Pasajeros</h5>
+                                            </div>
+                                            <div class="card-body">
+                                                <ul class="list-group list-group-flush">
+                                                    ${passengerList || '<li class="list-group-item">No hay información de pasajeros disponible</li>'}
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="col-md-6 mb-4">
+                                        <div class="card h-100">
+                                            <div class="card-header bg-success text-white">
+                                                <h5 class="mb-0"><i class="fas fa-dollar-sign me-2"></i>Resumen de Pago</h5>
+                                            </div>
+                                            <div class="card-body">
+                                                <div class="d-flex justify-content-between mb-2">
+                                                    <span>Precio base:</span>
+                                                    <strong>${baseFare.toFixed(2)} ${originalCurrency}</strong>
+                                                </div>
+                                                ${fee > 0 ? `
+                                                <div class="d-flex justify-content-between mb-2">
+                                                    <span>Cargo de servicio:</span>
+                                                    <strong>${feeDisplay}</strong>
+                                                </div>` : ''}
+                                                <hr>
+                                                <div class="d-flex justify-content-between">
+                                                    <h5>Total:</h5>
+                                                    <h5>${totalPrice.toFixed(2)} ${displayCurrency}</h5>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-footer text-center">
+                                <button class="btn btn-primary" onclick="showPnrSearchModal()">
+                                    <i class="fas fa-search me-2"></i>Nueva Búsqueda
+                                </button>
+                                <button class="btn btn-outline-secondary ms-2" onclick="window.print()">
+                                    <i class="fas fa-print me-2"></i>Imprimir Confirmación
+                                </button>
+                                <button class="btn btn-outline-primary ms-2" onclick="sendConfirmationEmail('${data.details.contact_email || ''}', '${data.pnr}')">
+                                    <i class="fas fa-envelope me-2"></i>Enviar por Email
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    // Mostrar mensaje de error
+                    searchResult.innerHTML = `
+                        <div class="alert alert-danger" role="alert">
+                            <h4 class="alert-heading"><i class="fas fa-exclamation-triangle me-2"></i>No se encontró la reserva</h4>
+                            <p>${data.error || 'No se encontró ninguna reserva con ese código PNR. Por favor, verifica el código e intenta nuevamente.'}</p>
+                            <hr>
+                            <div class="text-center">
+                                <button class="btn btn-danger" onclick="resetPnrSearch()">
+                                    <i class="fas fa-redo me-2"></i>Intentar Nuevamente
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                // Mostrar mensaje de error
+                searchResult.innerHTML = `
+                    <div class="alert alert-danger" role="alert">
+                        <h4 class="alert-heading"><i class="fas fa-exclamation-triangle me-2"></i>Error</h4>
+                        <p>Ha ocurrido un error al buscar la reserva. Por favor, intenta nuevamente.</p>
+                        <hr>
+                        <div class="text-center">
+                            <button class="btn btn-danger" onclick="resetPnrSearch()">
+                                <i class="fas fa-redo me-2"></i>Intentar Nuevamente
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+        
+        // Función para resetear la búsqueda por PNR
+        function resetPnrSearch() {
+            document.getElementById('pnrSearchForm').style.display = 'block';
+            document.getElementById('pnrSearchResult').style.display = 'none';
+            document.getElementById('pnrInput').value = '';
+        }
+        
+        // Función para mostrar la pestaña de búsqueda de vuelos
+        function showSearchTab() {
+            // Si hay un modal abierto, cerrarlo
+            const openModals = document.querySelectorAll('.modal.show');
+            openModals.forEach(modal => {
+                const modalInstance = bootstrap.Modal.getInstance(modal);
+                if (modalInstance) modalInstance.hide();
+            });
+            
+            // Enfocar en el formulario de búsqueda
+            document.querySelector('.search-form-container').scrollIntoView({ behavior: 'smooth' });
+        }
+    </script>
+</body>
+</html>

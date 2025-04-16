@@ -327,7 +327,7 @@
         }
     </style>
 </head>
-<body>
+<body {% if prefill %}data-prefill="{{ prefill|tojson|replace('"', '&quot;') }}"{% endif %}>
     <div class="hero-section text-center">
         <div class="container">
             <h1 class="display-4 mb-3"><i class="fas fa-plane-departure me-3"></i>Buscador de Vuelos</h1>
@@ -424,6 +424,10 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/es.js"></script>
+    
+
+
     <script>
         // Función para mostrar/ocultar detalles del vuelo
         function toggleDetails(flightId) {
@@ -529,21 +533,7 @@
                 }
             });
         }
-        // Inicializar los selectores de fecha
-        flatpickr("#departure_date", {
-            minDate: "today",
-            dateFormat: "Y-m-d",
-            onChange: function(selectedDates) {
-                const returnDatePicker = document.querySelector("#return_date")._flatpickr;
-                returnDatePicker.set("minDate", selectedDates[0]);
-            }
-        });
-
-        flatpickr("#return_date", {
-            minDate: "today",
-            dateFormat: "Y-m-d"
-        });
-
+        
         // Manejar el envío del formulario
         document.getElementById('flightSearchForm').addEventListener('submit', async function(e) {
             e.preventDefault();
@@ -1928,6 +1918,54 @@
             // Enfocar en el formulario de búsqueda
             document.querySelector('.search-form-container').scrollIntoView({ behavior: 'smooth' });
         }
+    </script>
+    <!-- Script para manejar parámetros prefijados -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Obtener datos prefijados si existen
+            {% if prefill %}
+            const prefillData = {{ prefill|tojson|safe }};
+            
+            // Rellenar campos del formulario
+            if (prefillData.origin) {
+                document.getElementById('origin').value = prefillData.origin;
+                document.getElementById('origin_code').value = prefillData.origin; // Rellenar el campo oculto
+            }
+            
+            if (prefillData.destination) {
+                document.getElementById('destination').value = prefillData.destination;
+                document.getElementById('destination_code').value = prefillData.destination; // Rellenar el campo oculto
+            }
+            
+            if (prefillData.departure_date) {
+                document.getElementById('departure_date').value = prefillData.departure_date;
+            }
+            
+            if (prefillData.return_date) {
+                document.getElementById('return_date').value = prefillData.return_date;
+            }
+            
+            if (prefillData.adults) {
+                document.getElementById('adults').value = prefillData.adults;
+            }
+            
+            if (prefillData.children) {
+                document.getElementById('children').value = prefillData.children;
+            }
+            
+            if (prefillData.infants) {
+                document.getElementById('infants').value = prefillData.infants;
+            }
+            
+            // Ejecutar búsqueda automáticamente si se solicita
+            if (prefillData.auto_search === 'true') {
+                // Esperar un momento para que se carguen todos los componentes
+                setTimeout(() => {
+                    document.querySelector('#flightSearchForm button[type="submit"]').click();
+                }, 1000);
+            }
+            {% endif %}
+        });
     </script>
 </body>
 </html>

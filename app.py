@@ -215,6 +215,33 @@ def search_flights(origin, destination, departure_date, return_date=None, adults
 def index():
     return render_template('index.html')
 
+# Ruta para continuar una reserva desde una URL compartida
+@app.route('/quick_search')
+def quick_search():
+    # Obtener parámetros de la URL
+    origin = request.args.get('origin', '')
+    destination = request.args.get('destination', '')
+    departure_date = request.args.get('departure_date', '')
+    return_date = request.args.get('return_date', '')
+    adults = request.args.get('adults', '1')
+    children = request.args.get('children', '0')
+    infants = request.args.get('infants', '0')
+    
+    # Pasar los parámetros a la plantilla
+    return render_template(
+        'index.html',
+        prefill={
+            'origin': origin,
+            'destination': destination,
+            'departure_date': departure_date,
+            'return_date': return_date,
+            'adults': adults,
+            'children': children,
+            'infants': infants,
+            'auto_search': 'true' if all([origin, destination, departure_date]) else 'false'
+        }
+    )
+
 # Ruta para buscar reservas por PNR
 @app.route('/find_booking', methods=['POST'])
 def find_booking():
@@ -1089,5 +1116,132 @@ def create_booking():
 with app.app_context():
     db.create_all()
 
+# API Endpoint para búsqueda de vuelos (para integración con WhatsApp)
+@app.route('/api/search_flights', methods=['GET'])
+def api_search_flights():
+    try:
+        # Obtener parámetros de la URL
+        origin = request.args.get('origin')
+        destination = request.args.get('destination')
+        departure_date = request.args.get('departure_date')
+        return_date = request.args.get('return_date')
+        adults = request.args.get('adults', '1')
+        children = request.args.get('children', '0')
+        infants = request.args.get('infants', '0')
+        
+        # Validar parámetros obligatorios
+        if not all([origin, destination, departure_date]):
+            return jsonify({
+                'success': False,
+                'message': 'Faltan parámetros obligatorios: origin, destination, departure_date'
+            }), 400
+        
+        # Buscar vuelos
+        flight_data = search_flights(
+            origin=origin,
+            destination=destination,
+            departure_date=departure_date,
+            return_date=return_date,
+            adults=adults,
+            children=children,
+            infants=infants
+        )
+        
+        # Simplificar la respuesta para WhatsApp (opcional)
+        simplified_results = []
+        for offer in flight_data.get('data', []):
+            price = offer.get('price', {})
+            itineraries = offer.get('itineraries', [])
+            
+            flight_info = {
+                'price': {
+                    'total': price.get('total'),
+                    'currency': price.get('currency')
+                },
+                'segments': []
+            }
+            
+            # Procesar segmentos de vuelo
+            for itinerary in itineraries:
+                for segment in itinerary.get('segments', []):
+                    departure = segment.get('departure', {})
+                    arrival = segment.get('arrival', {})
+                    carrier = segment.get('carrierCode', '')
+                    
+                    flight_info['segments'].append({
+                        'departure': {
+                            'iataCode': departure.get('iataCode'),
+                            'at': departure.get('at')
+                        },
+                        'arrival': {
+                            'iataCode': arrival.get('iataCode'),
+                            'at': arrival.get('at')
+                        },
+                        'carrier': carrier,
+                        'number': segment.get('number')
+                    })
+            
+            simplified_results.append(flight_info)
+        
+        return jsonify({
+            'success': True,
+            'count': len(simplified_results),
+            'results': simplified_results
+        })
+    
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
+# API Endpoint para consultar reservas por PNR
+@app.route('/api/find_booking', methods=['GET'])
+def api_find_booking():
+    try:
+        pnr = request.args.get('pnr')
+        
+        if not pnr:
+            return jsonify({
+                'success': False,
+                'message': 'Falta el parámetro PNR'
+            }), 400
+        
+        # Buscar la reserva en la base de datos
+        booking = Booking.query.filter_by(pnr=pnr.upper()).first()
+        
+        if not booking:
+            return jsonify({
+                'success': False,
+                'message': 'No se encontró ninguna reserva con ese PNR'
+            }), 404
+        
+        # Convertir datos de pasajeros de JSON a diccionario
+        passenger_data = json.loads(booking.passenger_data)
+        
+        # Crear respuesta con datos de la reserva
+        booking_info = {
+            'pnr': booking.pnr,
+            'status': booking.status,
+            'fare_type': booking.fare_type,
+            'total_price': booking.total_price,
+            'currency': booking.currency,
+            'contact_email': booking.contact_email,
+            'contact_phone': booking.contact_phone,
+            'passengers': passenger_data,
+            'created_at': booking.created_at.strftime('%Y-%m-%d %H:%M:%S')
+        }
+        
+        return jsonify({
+            'success': True,
+            'booking': booking_info
+        })
+    
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
 if __name__ == '__main__':
-    app.run(debug=True, port=5005)
+    app.run(debug=True, port=5005, host='0.0.0.0')

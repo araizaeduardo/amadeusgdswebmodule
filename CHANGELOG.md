@@ -2,6 +2,20 @@
 
 Todas las modificaciones notables del proyecto se documentarán en este archivo.
 
+## [1.11.0] - 2025-04-16
+
+### Añadido
+- **Mejoras en la selección de tipo de viaje**:
+  - Implementación de selección entre vuelos de ida y vuelta o solo ida
+  - Reorganización visual del formulario para mejor experiencia de usuario
+  - Validación de fechas para evitar seleccionar fechas de regreso anteriores a la fecha de salida
+
+### Mejorado
+- **Optimización de consultas a la API de Amadeus**:
+  - Uso explícito del parámetro `trip_type` para construir consultas más precisas
+  - Manejo mejorado de parámetros para vuelos de solo ida
+  - Validación robusta de parámetros según el tipo de viaje seleccionado
+
 ## [1.10.1] - 2025-04-09
 
 ### Añadido

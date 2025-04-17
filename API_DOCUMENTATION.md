@@ -2,6 +2,12 @@
 
 Esta documentación proporciona información detallada sobre las APIs y funcionalidades de integración disponibles en el Buscador de Vuelos con Amadeus.
 
+## Información General
+
+**URL Base de Producción:** `https://vuelos.paseotravel.com`
+
+Todos los endpoints y ejemplos en esta documentación utilizan esta URL base. Para entornos de desarrollo o pruebas, sustituya esta URL por la correspondiente a su entorno local o de staging.
+
 ## Índice
 
 1. [Endpoints API](#endpoints-api)
@@ -36,14 +42,22 @@ El sistema proporciona endpoints API RESTful que permiten a aplicaciones externa
 | origin | String | Sí | Código IATA del aeropuerto de origen (ej. MEX) |
 | destination | String | Sí | Código IATA del aeropuerto de destino (ej. CUN) |
 | departure_date | String | Sí | Fecha de salida en formato YYYY-MM-DD |
-| return_date | String | No | Fecha de regreso en formato YYYY-MM-DD |
+| return_date | String | Condicional | Fecha de regreso en formato YYYY-MM-DD. **Requerido** si trip_type es "roundtrip", **ignorado** si trip_type es "oneway" |
+| trip_type | String | No | Tipo de viaje: "roundtrip" (ida y vuelta) o "oneway" (solo ida). Por defecto: "roundtrip" |
 | adults | Integer | No | Número de adultos (por defecto: 1) |
 | children | Integer | No | Número de niños (2-17 años) (por defecto: 0) |
 | infants | Integer | No | Número de infantes (0-2 años) (por defecto: 0) |
 
-**Ejemplo de solicitud:**
+**Ejemplos de solicitud:**
+
+*Búsqueda de ida y vuelta (roundtrip):*
 ```
-GET /api/search_flights?origin=MEX&destination=CUN&departure_date=2025-05-15&return_date=2025-05-20&adults=2
+GET https://vuelos.paseotravel.com/api/search_flights?origin=MEX&destination=CUN&departure_date=2025-05-15&return_date=2025-05-20&trip_type=roundtrip&adults=2
+```
+
+*Búsqueda de solo ida (oneway):*
+```
+GET https://vuelos.paseotravel.com/api/search_flights?origin=MEX&destination=CUN&departure_date=2025-05-15&trip_type=oneway&adults=2
 ```
 
 **Ejemplo de respuesta:**
@@ -134,7 +148,7 @@ GET /api/search_flights?origin=MEX&destination=CUN&departure_date=2025-05-15&ret
 
 **Ejemplo de solicitud:**
 ```
-GET /api/find_booking?pnr=ABC123
+GET https://vuelos.paseotravel.com/api/find_booking?pnr=ABC123
 ```
 
 **Ejemplo de respuesta:**
@@ -185,15 +199,23 @@ Esta ruta permite precargar parámetros de búsqueda en el formulario y opcional
 | origin | String | No | Código IATA del aeropuerto de origen |
 | destination | String | No | Código IATA del aeropuerto de destino |
 | departure_date | String | No | Fecha de salida en formato YYYY-MM-DD |
-| return_date | String | No | Fecha de regreso en formato YYYY-MM-DD |
+| return_date | String | No | Fecha de regreso en formato YYYY-MM-DD. Ignorado si trip_type es "oneway" |
+| trip_type | String | No | Tipo de viaje: "roundtrip" (ida y vuelta) o "oneway" (solo ida). Por defecto: "roundtrip" |
 | adults | Integer | No | Número de adultos (por defecto: 1) |
 | children | Integer | No | Número de niños (2-17 años) (por defecto: 0) |
 | infants | Integer | No | Número de infantes (0-2 años) (por defecto: 0) |
 | auto_search | Boolean | No | Si es "true", ejecuta la búsqueda automáticamente al cargar la página |
 
-**Ejemplo de enlace directo:**
+**Ejemplos de enlaces directos:**
+
+*Búsqueda de ida y vuelta (roundtrip):*
 ```
-/quick_search?origin=MEX&destination=CUN&departure_date=2025-05-15&return_date=2025-05-20&adults=2&auto_search=true
+https://vuelos.paseotravel.com/quick_search?origin=MEX&destination=CUN&departure_date=2025-05-15&return_date=2025-05-20&trip_type=roundtrip&adults=2&auto_search=true
+```
+
+*Búsqueda de solo ida (oneway):*
+```
+https://vuelos.paseotravel.com/quick_search?origin=MEX&destination=CUN&departure_date=2025-05-15&trip_type=oneway&adults=2&auto_search=true
 ```
 
 Este enlace precargará los campos del formulario con los valores especificados y ejecutará la búsqueda automáticamente.
@@ -212,7 +234,7 @@ El sistema está diseñado para integrarse con aplicaciones de mensajería como 
 2. El sistema de WhatsApp extrae los parámetros (origen, destino, fecha)
 3. Realiza una solicitud a `/api/search_flights` con los parámetros extraídos
 4. Procesa la respuesta JSON y envía un mensaje con los resultados
-5. Incluye un enlace directo para continuar en la web: `/quick_search?origin=MEX&destination=CUN&departure_date=2025-05-15&auto_search=true`
+5. Incluye un enlace directo para continuar en la web: `https://vuelos.paseotravel.com/quick_search?origin=MEX&destination=CUN&departure_date=2025-05-15&trip_type=oneway&auto_search=true` (para solo ida) o `https://vuelos.paseotravel.com/quick_search?origin=MEX&destination=CUN&departure_date=2025-05-15&return_date=2025-05-20&trip_type=roundtrip&auto_search=true` (para ida y vuelta)
 
 #### Consulta de Reservas
 

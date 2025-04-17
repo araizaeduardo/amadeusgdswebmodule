@@ -139,7 +139,7 @@ def search_airports(keyword):
         return []
 
 # Función para consultar vuelos
-def search_flights(origin, destination, departure_date, return_date=None, adults=1, children=0, infants=0, source_system="GDS"):
+def search_flights(origin, destination, departure_date, return_date=None, adults=1, children=0, infants=0, source_system="GDS", trip_type="roundtrip"):
     try:
         # Convert airport codes to uppercase
         origin = origin.upper()
@@ -171,14 +171,33 @@ def search_flights(origin, destination, departure_date, return_date=None, adults
         if infants > 0:
             params["infants"] = infants
             
-        # Add return date for round-trip flights
-        if return_date:
+        # Configurar parámetros según el tipo de viaje
+        if trip_type.lower() == "roundtrip" and return_date:
+            # Para vuelos de ida y vuelta
             params["returnDate"] = return_date
             params["nonStop"] = "false"  # Allow connections for better results
+        elif trip_type.lower() == "oneway":
+            # Para vuelos de solo ida
+            # Asegurarse de que no se envíe returnDate incluso si viene como parámetro
+            if "returnDate" in params:
+                del params["returnDate"]
+            # Opcionalmente, podemos ajustar otros parámetros para vuelos de solo ida
+            params["nonStop"] = "false"  # Allow connections for better results
             
-        # Siempre incluir opciones para mostrar múltiples tarifas (básica, estándar y familiar)
-        # Configuración para incluir aerolíneas que ofrecen diferentes tipos de tarifas
-        params["includedAirlineCodes"] = "IB,BA,LH,AF,AZ,UX,AA,DL,UA"  # Aerolíneas principales
+        # Incluir amplia variedad de aerolíneas para mostrar múltiples tarifas y opciones
+        # Configuración para incluir aerolíneas de Latinoamérica, Norteamérica y rutas internacionales
+        params["includedAirlineCodes"] = (
+            # Latinoamérica
+            "AM,AV,CM,LA,AR,4M,JJ,G3,H2,LU,LP,P9,UC,WV,Y4,VB," +
+            # Estados Unidos y Canadá
+            "AA,DL,UA,B6,AS,WN,AC,WS,F8," +
+            # Europa
+            "IB,BA,LH,AF,AZ,UX,LX,OS,SN,TP,TK," +
+            # Medio Oriente (incluye rutas a Turquía e Israel)
+            "TK,LY,MS,EK,EY,QR,SV,ME,RJ," +
+            # Asia y otras internacionales
+            "CX,SQ,NH,OZ,KE,CA,MU,HU,JL"
+        )  # Códigos IATA de aerolíneas seleccionadas
         
         # Si hay niños o infantes, incluir servicios adicionales para familias
         if children > 0 or infants > 0:
@@ -193,13 +212,23 @@ def search_flights(origin, destination, departure_date, return_date=None, adults
             
             # Para NDC, podemos añadir parámetros adicionales para mejorar los resultados
             if source_system == "NDC":
-                # Algunas aerolíneas que ofrecen buen contenido NDC
-                params["includedAirlineCodes"] = params.get("includedAirlineCodes", "") + ",BA,AA,IB,LH,AF"
-                # Eliminar duplicados en caso de que ya se hayan añadido en family_fare
-                if "includedAirlineCodes" in params:
-                    airline_codes = params["includedAirlineCodes"].split(",")
-                    unique_codes = list(dict.fromkeys(airline_codes))
-                    params["includedAirlineCodes"] = ",".join([code for code in unique_codes if code])
+                # Asegurarse de que las aerolíneas con mejor contenido NDC estén incluidas
+                # Estas aerolíneas ofrecen datos más completos y tarifas personalizadas en NDC
+                ndc_preferred_airlines = ["BA", "AA", "IB", "LH", "AF", "DL", "UA"]
+                
+                # Convertir la cadena de aerolíneas actuales a un conjunto para operaciones más eficientes
+                current_airlines = set(params.get("includedAirlineCodes", "").split(","))
+                
+                # Añadir las aerolíneas NDC preferidas que no estén ya incluidas
+                for airline in ndc_preferred_airlines:
+                    current_airlines.add(airline)
+                
+                # Eliminar cualquier cadena vacía que pueda haberse colado
+                if "" in current_airlines:
+                    current_airlines.remove("")
+                
+                # Actualizar el parámetro con la lista unificada
+                params["includedAirlineCodes"] = ",".join(current_airlines)
         
         print(f"Searching flights with params: {params}")  # Debug log
         response = requests.get(search_url, headers=headers, params=params)
@@ -223,6 +252,7 @@ def quick_search():
     destination = request.args.get('destination', '')
     departure_date = request.args.get('departure_date', '')
     return_date = request.args.get('return_date', '')
+    trip_type = request.args.get('trip_type', 'roundtrip')
     adults = request.args.get('adults', '1')
     children = request.args.get('children', '0')
     infants = request.args.get('infants', '0')
@@ -235,6 +265,7 @@ def quick_search():
             'destination': destination,
             'departure_date': departure_date,
             'return_date': return_date,
+            'trip_type': trip_type,
             'adults': adults,
             'children': children,
             'infants': infants,
@@ -1125,6 +1156,7 @@ def api_search_flights():
         destination = request.args.get('destination')
         departure_date = request.args.get('departure_date')
         return_date = request.args.get('return_date')
+        trip_type = request.args.get('trip_type', 'roundtrip').lower()  # Por defecto: roundtrip
         adults = request.args.get('adults', '1')
         children = request.args.get('children', '0')
         infants = request.args.get('infants', '0')
@@ -1135,16 +1167,31 @@ def api_search_flights():
                 'success': False,
                 'message': 'Faltan parámetros obligatorios: origin, destination, departure_date'
             }), 400
+            
+        # Validar que return_date esté presente si trip_type es roundtrip
+        if trip_type == 'roundtrip' and not return_date:
+            return jsonify({
+                'success': False,
+                'message': 'El parámetro return_date es obligatorio para búsquedas de ida y vuelta (roundtrip)'
+            }), 400
+            
+        # Validar que trip_type sea válido
+        if trip_type not in ['roundtrip', 'oneway']:
+            return jsonify({
+                'success': False,
+                'message': 'El parámetro trip_type debe ser "roundtrip" o "oneway"'
+            }), 400
         
         # Buscar vuelos
         flight_data = search_flights(
             origin=origin,
             destination=destination,
             departure_date=departure_date,
-            return_date=return_date,
+            return_date=return_date if trip_type == 'roundtrip' else None,
             adults=adults,
             children=children,
-            infants=infants
+            infants=infants,
+            trip_type=trip_type
         )
         
         # Simplificar la respuesta para WhatsApp (opcional)

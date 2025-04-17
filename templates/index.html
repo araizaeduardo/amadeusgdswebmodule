@@ -364,34 +364,48 @@
                                         <div id="destination_suggestions" class="autocomplete-suggestions"></div>
                                     </div>
                                 </div>
-                                <div class="col-md-6">
-                                    <div class="input-icon">
-                                        <i class="fas fa-calendar"></i>
-                                        <input type="date" class="form-control" id="departure_date" name="departure_date" required>
+                                <div class="col-md-12 mb-3">
+                                    <div class="btn-group w-100" role="group" aria-label="Tipo de viaje">
+                                        <input type="radio" class="btn-check" name="trip_type" id="roundtrip" value="roundtrip" checked>
+                                        <label class="btn btn-outline-primary" for="roundtrip"><i class="fas fa-exchange-alt me-2"></i>Ida y vuelta</label>
+                                        
+                                        <input type="radio" class="btn-check" name="trip_type" id="oneway" value="oneway">
+                                        <label class="btn btn-outline-primary" for="oneway"><i class="fas fa-long-arrow-alt-right me-2"></i>Solo ida</label>
                                     </div>
                                 </div>
-                                <div class="col-md-6">
-                                    <div class="input-icon">
-                                        <i class="fas fa-calendar-alt"></i>
-                                        <input type="date" class="form-control" id="return_date" name="return_date" required>
+                                <div class="row g-3 mb-3" id="dates_container">
+                                    <div class="col-md-6">
+                                        <div class="input-icon">
+                                            <i class="fas fa-calendar"></i>
+                                            <input type="date" class="form-control" id="departure_date" name="departure_date" required>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6" id="return_date_container">
+                                        <div class="input-icon">
+                                            <i class="fas fa-calendar-alt"></i>
+                                            <input type="date" class="form-control" id="return_date" name="return_date" required>
+                                        </div>
                                     </div>
                                 </div>
-                                <div class="col-md-4">
-                                    <div class="input-icon">
-                                        <i class="fas fa-user"></i>
-                                        <input type="number" class="form-control" id="adults" name="adults" min="1" max="9" value="1" required placeholder="Adultos (máx. 9)">
+                                
+                                <div class="row g-3">
+                                    <div class="col-md-4">
+                                        <div class="input-icon">
+                                            <i class="fas fa-user"></i>
+                                            <input type="number" class="form-control" id="adults" name="adults" min="1" max="9" value="1" required placeholder="Adultos (máx. 9)">
+                                        </div>
                                     </div>
-                                </div>
-                                <div class="col-md-4">
-                                    <div class="input-icon">
-                                        <i class="fas fa-child"></i>
-                                        <input type="number" class="form-control" id="children" name="children" min="0" value="0" placeholder="Niños (2-17 años)">
+                                    <div class="col-md-4">
+                                        <div class="input-icon">
+                                            <i class="fas fa-child"></i>
+                                            <input type="number" class="form-control" id="children" name="children" min="0" value="0" placeholder="Niños (2-17 años)">
+                                        </div>
                                     </div>
-                                </div>
-                                <div class="col-md-4">
-                                    <div class="input-icon">
-                                        <i class="fas fa-baby"></i>
-                                        <input type="number" class="form-control" id="infants" name="infants" min="0" value="0" placeholder="Infantes (0-2 años)">
+                                    <div class="col-md-4">
+                                        <div class="input-icon">
+                                            <i class="fas fa-baby"></i>
+                                            <input type="number" class="form-control" id="infants" name="infants" min="0" value="0" placeholder="Infantes (0-2 años)">
+                                        </div>
                                     </div>
                                 </div>
 
@@ -1922,6 +1936,50 @@
     <!-- Script para manejar parámetros prefijados -->
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            // Configurar manejo de tipo de viaje (ida y vuelta o solo ida)
+            const tripTypeRadios = document.querySelectorAll('input[name="trip_type"]');
+            const returnDateContainer = document.getElementById('return_date_container');
+            const returnDateInput = document.getElementById('return_date');
+            const departureDateInput = document.getElementById('departure_date');
+            
+            // Función para actualizar la visibilidad del campo de fecha de regreso
+            function updateReturnDateVisibility() {
+                const selectedTripType = document.querySelector('input[name="trip_type"]:checked').value;
+                if (selectedTripType === 'oneway') {
+                    returnDateContainer.style.display = 'none';
+                    returnDateInput.required = false;
+                } else {
+                    returnDateContainer.style.display = 'block';
+                    returnDateInput.required = true;
+                }
+            }
+            
+            // Función para actualizar la fecha mínima del campo de fecha de regreso
+            function updateReturnDateMinValue() {
+                const departureDate = departureDateInput.value;
+                if (departureDate) {
+                    returnDateInput.min = departureDate;
+                    
+                    // Si la fecha de regreso es menor que la fecha de salida, actualizarla
+                    if (returnDateInput.value && returnDateInput.value < departureDate) {
+                        returnDateInput.value = departureDate;
+                    }
+                }
+            }
+            
+            // Asignar evento change a los radio buttons de tipo de viaje
+            tripTypeRadios.forEach(radio => {
+                radio.addEventListener('change', updateReturnDateVisibility);
+            });
+            
+            // Asignar evento change a la fecha de salida
+            departureDateInput.addEventListener('change', updateReturnDateMinValue);
+            departureDateInput.addEventListener('input', updateReturnDateMinValue);
+            
+            // Ejecutar las funciones inicialmente para configurar el estado correcto
+            updateReturnDateVisibility();
+            updateReturnDateMinValue();
+            
             // Obtener datos prefijados si existen
             {% if prefill %}
             const prefillData = {{ prefill|tojson|safe }};
@@ -1935,6 +1993,15 @@
             if (prefillData.destination) {
                 document.getElementById('destination').value = prefillData.destination;
                 document.getElementById('destination_code').value = prefillData.destination; // Rellenar el campo oculto
+            }
+            
+            // Configurar tipo de viaje si está especificado
+            if (prefillData.trip_type) {
+                const tripTypeRadio = document.getElementById(prefillData.trip_type);
+                if (tripTypeRadio) {
+                    tripTypeRadio.checked = true;
+                    updateReturnDateVisibility(); // Actualizar visibilidad del campo de fecha de regreso
+                }
             }
             
             if (prefillData.departure_date) {

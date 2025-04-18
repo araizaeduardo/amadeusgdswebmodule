@@ -1499,6 +1499,12 @@
         function sendConfirmationEmail(email, pnr) {
             console.log(`Preparando envío de email para PNR: ${pnr}, Email inicial: ${email}`);
             
+            // Verificar que tenemos un PNR válido
+            if (!pnr || pnr.trim() === '') {
+                alert('Error: No se pudo obtener el código de reserva (PNR). Por favor, inténtalo de nuevo.');
+                return;
+            }
+            
             // Mostrar un modal de confirmación
             const emailModal = document.createElement('div');
             emailModal.className = 'modal fade';
@@ -1574,13 +1580,33 @@
                 formData.append('include_itinerary', includeItinerary);
                 formData.append('include_pdf', includePDF);
                 
+                // Mostrar mensaje de depuración
+                console.log('Enviando solicitud al servidor:', {
+                    pnr: pnr,
+                    email: emailValue,
+                    include_itinerary: includeItinerary,
+                    include_pdf: includePDF
+                });
+                
                 // Enviar la solicitud al servidor
                 fetch('/send_booking_email', {
                     method: 'POST',
                     body: formData
                 })
-                .then(response => response.json())
+                .then(response => {
+                    console.log('Respuesta del servidor recibida:', response.status);
+                    if (!response.ok) {
+                        throw new Error(`Error en la respuesta del servidor: ${response.status} ${response.statusText}`);
+                    }
+                    return response.json();
+                })
                 .then(data => {
+                    console.log('Datos de respuesta:', data);
+                    
+                    // Restaurar el botón a su estado normal
+                    sendButton.disabled = false;
+                    sendButton.innerHTML = 'Enviar';
+                    
                     // Cerrar el modal de confirmación
                     const modal = bootstrap.Modal.getInstance(document.getElementById('emailConfirmationModal'));
                     modal.hide();
@@ -1599,14 +1625,11 @@
                                 <div class="toast show" role="alert" aria-live="assertive" aria-atomic="true">
                                     <div class="toast-header bg-success text-white">
                                         <i class="fas fa-check-circle me-2"></i>
-                                        <strong class="me-auto">Email Enviado</strong>
-                                        <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+                                        <strong class="me-auto">Correo Enviado</strong>
+                                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
                                     </div>
                                     <div class="toast-body">
-                                        Se ha enviado la confirmación de reserva a ${emailValue}.
-                                        <div class="mt-2 pt-2 border-top">
-                                            <small class="text-muted">Código de reserva: ${pnr}</small>
-                                        </div>
+                                        ${data.message}
                                     </div>
                                 </div>
                             `;
@@ -1616,10 +1639,10 @@
                                     <div class="toast-header bg-danger text-white">
                                         <i class="fas fa-exclamation-circle me-2"></i>
                                         <strong class="me-auto">Error</strong>
-                                        <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+                                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
                                     </div>
                                     <div class="toast-body">
-                                        ${data.error}
+                                        ${data.error || 'No se pudo enviar el correo electrónico. Por favor, inténtalo de nuevo.'}
                                     </div>
                                 </div>
                             `;
@@ -1634,11 +1657,49 @@
                     });
                 })
                 .catch(error => {
-                    console.error('Error:', error);
-                    sendButton.disabled = false;
-                    sendButton.innerHTML = '<i class="fas fa-paper-plane me-2"></i>Enviar Email';
+                    console.error('Error al enviar el correo:', error);
                     
-                    // Mostrar mensaje de error
+                    // Restaurar el botón a su estado normal
+                    sendButton.disabled = false;
+                    sendButton.innerHTML = 'Enviar';
+                    
+                    // Cerrar el modal
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('emailConfirmationModal'));
+                    if (modal) {
+                        modal.hide();
+                        
+                        // Eliminar el modal del DOM después de cerrarlo
+                        document.getElementById('emailConfirmationModal').addEventListener('hidden.bs.modal', function () {
+                            this.remove();
+                            
+                            // Mostrar notificación de error
+                            const notification = document.createElement('div');
+                            notification.className = 'position-fixed bottom-0 end-0 p-3';
+                            notification.style.zIndex = '5';
+                            notification.innerHTML = `
+                                <div class="toast show" role="alert" aria-live="assertive" aria-atomic="true">
+                                    <div class="toast-header bg-danger text-white">
+                                        <i class="fas fa-exclamation-circle me-2"></i>
+                                        <strong class="me-auto">Error de Conexión</strong>
+                                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
+                                    </div>
+                                    <div class="toast-body">
+                                        No se pudo conectar con el servidor para enviar el correo. Verifica tu conexión a internet e inténtalo de nuevo.
+                                        <div class="small text-muted mt-2">Error: ${error.message}</div>
+                                    </div>
+                                </div>
+                            `;
+                            document.body.appendChild(notification);
+                            
+                            // Eliminar la notificación después de 5 segundos
+                            setTimeout(() => {
+                                notification.remove();
+                            }, 5000);
+                        });
+                    } else {
+                        // Si no se puede obtener el modal, mostrar un alert
+                        alert(`Error al enviar el correo: ${error.message}`);
+                    }
                     alert('Error al enviar el email. Por favor, inténtalo de nuevo más tarde.');
                 });
             });

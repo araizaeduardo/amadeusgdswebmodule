@@ -35,6 +35,10 @@ mail = Mail(app)
 
 db = SQLAlchemy(app)
 
+# Asegurarse de que las tablas existan en la base de datos
+with app.app_context():
+    db.create_all()
+
 # Modelo para las reservas
 class Booking(db.Model):
     id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
@@ -58,6 +62,19 @@ class Booking(db.Model):
     
     def __repr__(self):
         return f'<Booking {self.id}>'
+
+# Modelo para registrar los correos enviados
+class EmailLog(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    pnr = db.Column(db.String(6), nullable=False, index=True)  # Código PNR relacionado
+    recipient = db.Column(db.String(100), nullable=False)  # Destinatario del correo
+    subject = db.Column(db.String(200), nullable=False)  # Asunto del correo
+    body = db.Column(db.Text, nullable=False)  # Contenido HTML del correo
+    sent_at = db.Column(db.DateTime, default=datetime.now)  # Fecha y hora de envío
+    environment = db.Column(db.String(20), nullable=False)  # Entorno (development, testing, production)
+    
+    def __repr__(self):
+        return f'<EmailLog {self.id} - PNR: {self.pnr}>'
 
 # Función para generar un PNR único (6 caracteres alfanuméricos)
 def generate_pnr():
@@ -373,6 +390,23 @@ def send_booking_email():
         # Crear el mensaje de correo electrónico
         subject = f"Confirmación de Reserva - PNR: {pnr}"
         
+        # Obtener el nombre del pasajero principal
+        passenger_name = ""
+        try:
+            if passenger_data and len(passenger_data) > 0:
+                first_passenger = passenger_data[0]
+                if isinstance(first_passenger, dict):
+                    first_name = first_passenger.get('firstName', '')
+                    last_name = first_passenger.get('lastName', '')
+                    if first_name or last_name:
+                        passenger_name = f"{first_name} {last_name}".strip()
+        except Exception as e:
+            print(f"Error al obtener el nombre del pasajero: {str(e)}")
+            passenger_name = ""
+        
+        # Personalizar el saludo según si tenemos el nombre del pasajero
+        greeting = f"Estimado(a) {passenger_name}," if passenger_name else "Estimado(a) Pasajero,"
+        
         # Crear el cuerpo del mensaje
         body = f"""
         <html>
@@ -397,7 +431,7 @@ def send_booking_email():
                     <h1>Confirmación de Reserva</h1>
                 </div>
                 <div class="content">
-                    <p>Estimado(a) Pasajero,</p>
+                    <p>{greeting}</p>
                     <p>Gracias por elegir nuestro servicio. A continuación, encontrará los detalles de su reserva:</p>
                     
                     <div class="booking-details">
@@ -456,34 +490,54 @@ def send_booking_email():
                             </tr>
             """
             
-            for passenger in passenger_data:
-                # Verificar si passenger es un diccionario
-                if isinstance(passenger, dict):
-                    first_name = passenger.get('firstName', '')
-                    last_name = passenger.get('lastName', '')
-                    passenger_type = passenger.get('type', '')
-                else:
-                    # Si no es un diccionario, intentar convertirlo o usar valores predeterminados
-                    try:
-                        if isinstance(passenger, str):
-                            passenger_dict = json.loads(passenger)
-                            first_name = passenger_dict.get('firstName', '')
-                            last_name = passenger_dict.get('lastName', '')
-                            passenger_type = passenger_dict.get('type', '')
-                        else:
+            # Mostrar un mensaje si no hay datos de pasajeros
+            if not passenger_data or len(passenger_data) == 0:
+                body += f"""
+                            <tr>
+                                <td colspan="3" class="text-center">No hay datos de pasajeros disponibles</td>
+                            </tr>
+                """
+            else:
+                # Procesar cada pasajero
+                for passenger in passenger_data:
+                    # Verificar si passenger es un diccionario
+                    if isinstance(passenger, dict):
+                        first_name = passenger.get('firstName', '')
+                        last_name = passenger.get('lastName', '')
+                        passenger_type = passenger.get('type', '')
+                    else:
+                        # Si no es un diccionario, intentar convertirlo o usar valores predeterminados
+                        try:
+                            if isinstance(passenger, str):
+                                passenger_dict = json.loads(passenger)
+                                first_name = passenger_dict.get('firstName', '')
+                                last_name = passenger_dict.get('lastName', '')
+                                passenger_type = passenger_dict.get('type', '')
+                            else:
+                                first_name = ''
+                                last_name = ''
+                                passenger_type = ''
+                        except Exception as e:
+                            print(f"Error al procesar datos de pasajero: {str(e)}")
                             first_name = ''
                             last_name = ''
                             passenger_type = ''
-                    except:
-                        first_name = ''
-                        last_name = ''
-                        passenger_type = ''
+                    
+                    # Traducir el tipo de pasajero a un formato más legible
+                    if passenger_type.upper() == 'ADT':
+                        passenger_type_display = 'Adulto'
+                    elif passenger_type.upper() == 'CHD':
+                        passenger_type_display = 'Niño'
+                    elif passenger_type.upper() == 'INF':
+                        passenger_type_display = 'Infante'
+                    else:
+                        passenger_type_display = passenger_type
                         
                 body += f"""
                             <tr>
                                 <td>{first_name}</td>
                                 <td>{last_name}</td>
-                                <td>{passenger_type}</td>
+                                <td>{passenger_type_display}</td>
                             </tr>
                 """
             
@@ -508,31 +562,54 @@ def send_booking_email():
         msg = Message(subject=subject, recipients=[email], html=body)
         
         try:
+            # Verificar que las credenciales de correo estén configuradas
+            if not app.config['MAIL_USERNAME'] or not app.config['MAIL_PASSWORD']:
+                print("ERROR: Credenciales de correo no configuradas. Revise las variables de entorno EMAIL_USER y EMAIL_PASSWORD.")
+                return jsonify({"success": False, "error": "Credenciales de correo no configuradas. Contacte al administrador del sistema."})
+            
             print(f"Intentando enviar correo a {email} con asunto: {subject}")
             print(f"Configuración de correo: SERVER={app.config['MAIL_SERVER']}, PORT={app.config['MAIL_PORT']}, USER={app.config['MAIL_USERNAME']}")
             
-            # En modo desarrollo o testing, simular el envío y guardar el correo en un archivo
-            if os.getenv('APP_ENV') in ['development', 'testing']:
-                # Crear directorio para correos si no existe
-                email_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'emails')
-                os.makedirs(email_dir, exist_ok=True)
+            # Obtener el entorno actual
+            env_mode = os.getenv('APP_ENV', 'development')
+            print(f"Entorno actual: {env_mode}")
+            
+            # Guardar el correo en la base de datos para todos los entornos
+            try:
+                # Crear un registro en la tabla EmailLog
+                email_log = EmailLog(
+                    pnr=pnr,
+                    recipient=email,
+                    subject=subject,
+                    body=body,
+                    environment=env_mode
+                )
                 
-                # Guardar el correo en un archivo
-                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-                filename = f"{email_dir}/email_{pnr}_{timestamp}.html"
-                
-                with open(filename, 'w', encoding='utf-8') as f:
-                    f.write(f"To: {email}\nSubject: {subject}\n\n{body}")
-                
-                env_mode = os.getenv('APP_ENV', 'development')
-                print(f"Correo guardado en {filename} (modo {env_mode})")
-                return jsonify({"success": True, "message": f"Se ha simulado el envío de correo a {email} (modo {env_mode}). El contenido se guardó en {filename}. Para enviar correos reales, cambie APP_ENV a 'production' en el archivo .env."})
-            else:
-                # Enviar el correo electrónico en producción
+                # Guardar en la base de datos
+                db.session.add(email_log)
+                db.session.commit()
+                print(f"Correo registrado en la base de datos con ID: {email_log.id} (modo {env_mode})")
+            except Exception as db_error:
+                print(f"Error al guardar el correo en la base de datos: {str(db_error)}")
+                # Continuar con el envío aunque falle el registro en la base de datos
+            
+            # Enviar el correo electrónico en todos los entornos (development, testing, production)
+            try:
                 mail.send(msg)
-                print("Correo enviado exitosamente")
+                print(f"Correo enviado exitosamente a {email}")
                 
-                return jsonify({"success": True, "message": f"Se ha enviado un correo electrónico a {email} con los detalles de la reserva."})
+                mensaje_respuesta = f"Se ha enviado un correo electrónico a {email} con los detalles de la reserva."
+                if 'email_log' in locals():
+                    mensaje_respuesta += f" Además, se ha guardado una copia en la base de datos con ID: {email_log.id}."
+                    
+                return jsonify({"success": True, "message": mensaje_respuesta, "email_log_id": email_log.id if 'email_log' in locals() else None})
+            except Exception as mail_error:
+                print(f"ERROR al enviar el correo: {str(mail_error)}")
+                # Proporcionar un mensaje de error más detallado para ayudar a diagnosticar el problema
+                error_msg = f"Error al enviar el correo: {str(mail_error)}"
+                if 'email_log' in locals():
+                    error_msg += f" El correo se guardó en la base de datos con ID: {email_log.id}."
+                return jsonify({"success": False, "error": error_msg})
         except Exception as e:
             print(f"Error al enviar correo: {str(e)}")
             return jsonify({"success": False, "error": f"Error al enviar el correo: {str(e)}"})

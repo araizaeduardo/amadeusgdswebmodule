@@ -36,6 +36,13 @@ Esta lista contiene mejoras propuestas para hacer la aplicación más atractiva 
   - Implementar filtros por aerolínea con logos
   - Crear opción para mostrar/ocultar vuelos con escalas largas
 
+- [ ] Implementar sistema de filtro dinámico por aerolínea
+  - Extraer automáticamente las aerolíneas de los resultados de búsqueda
+  - Crear interfaz con checkboxes para cada aerolínea encontrada
+  - Mostrar logos junto a los nombres de las aerolíneas
+  - Añadir contador de resultados por aerolínea
+  - Implementar filtrado en tiempo real sin recargar la página
+
 ### Baja Prioridad
 - [ ] Personalización de la experiencia
   - Permitir a usuarios guardar preferencias de búsqueda
@@ -70,9 +77,15 @@ Esta lista contiene mejoras propuestas para hacer la aplicación más atractiva 
   - Mejorar velocidad de carga con técnicas de compresión
   - Reducir tiempo de respuesta del servidor
 
-### Media Prioridad
+### Alta Prioridad
 - [ ] Mejorar experiencia móvil
   - Optimizar interfaz para dispositivos móviles
+  - Rediseñar tarjetas de resultados para mejor visualización en pantallas pequeñas
+  - Mejorar la legibilidad de la información de vuelos en formato móvil
+  - Optimizar el espacio vertical en los resultados de búsqueda
+  - Implementar diseño compacto para fechas y horarios
+  - Añadir indicadores visuales más claros para las tarifas disponibles
+  - Mejorar la visualización de los logos de aerolíneas
   - Implementar gestos táctiles para filtrar resultados
   - Crear versión PWA (Progressive Web App)
 

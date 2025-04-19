@@ -313,10 +313,39 @@ def find_booking():
         
         # Convertir los datos de pasajeros de JSON a diccionario
         try:
+            print(f"Tipo de passenger_data: {type(booking.passenger_data)}")
+            print(f"Valor de passenger_data: {booking.passenger_data}")
+            
             if isinstance(booking.passenger_data, str):
                 passenger_data = json.loads(booking.passenger_data)
             else:
                 passenger_data = booking.passenger_data
+            
+            # Extraer los pasajeros del diccionario si es necesario
+            all_passengers = []
+            if isinstance(passenger_data, dict):
+                # Si es un diccionario, extraer todos los tipos de pasajeros
+                if 'adults' in passenger_data and isinstance(passenger_data['adults'], list):
+                    for adult in passenger_data['adults']:
+                        adult['type'] = 'ADT'  # Asegurar que el tipo sea ADT
+                        all_passengers.append(adult)
+                
+                if 'children' in passenger_data and isinstance(passenger_data['children'], list):
+                    for child in passenger_data['children']:
+                        child['type'] = 'CHD'  # Asegurar que el tipo sea CHD
+                        all_passengers.append(child)
+                
+                if 'infants' in passenger_data and isinstance(passenger_data['infants'], list):
+                    for infant in passenger_data['infants']:
+                        infant['type'] = 'INF'  # Asegurar que el tipo sea INF
+                        all_passengers.append(infant)
+                
+                # Usar la lista combinada
+                passenger_data = all_passengers
+            elif not isinstance(passenger_data, list):
+                passenger_data = []
+            
+            print(f"Datos de pasajeros procesados: {passenger_data}")
         except Exception as e:
             print(f"Error al procesar datos de pasajeros: {str(e)}")
             passenger_data = []
@@ -379,10 +408,39 @@ def send_booking_email():
         
         # Convertir los datos de pasajeros de JSON a diccionario
         try:
+            print(f"Tipo de passenger_data: {type(booking.passenger_data)}")
+            print(f"Valor de passenger_data: {booking.passenger_data}")
+            
             if isinstance(booking.passenger_data, str):
                 passenger_data = json.loads(booking.passenger_data)
             else:
                 passenger_data = booking.passenger_data
+            
+            # Extraer los pasajeros del diccionario si es necesario
+            all_passengers = []
+            if isinstance(passenger_data, dict):
+                # Si es un diccionario, extraer todos los tipos de pasajeros
+                if 'adults' in passenger_data and isinstance(passenger_data['adults'], list):
+                    for adult in passenger_data['adults']:
+                        adult['type'] = 'ADT'  # Asegurar que el tipo sea ADT
+                        all_passengers.append(adult)
+                
+                if 'children' in passenger_data and isinstance(passenger_data['children'], list):
+                    for child in passenger_data['children']:
+                        child['type'] = 'CHD'  # Asegurar que el tipo sea CHD
+                        all_passengers.append(child)
+                
+                if 'infants' in passenger_data and isinstance(passenger_data['infants'], list):
+                    for infant in passenger_data['infants']:
+                        infant['type'] = 'INF'  # Asegurar que el tipo sea INF
+                        all_passengers.append(infant)
+                
+                # Usar la lista combinada
+                passenger_data = all_passengers
+            elif not isinstance(passenger_data, list):
+                passenger_data = []
+            
+            print(f"Datos de pasajeros procesados: {passenger_data}")
         except Exception as e:
             print(f"Error al procesar datos de pasajeros: {str(e)}")
             passenger_data = []
@@ -524,22 +582,27 @@ def send_booking_email():
                             passenger_type = ''
                     
                     # Traducir el tipo de pasajero a un formato más legible
-                    if passenger_type.upper() == 'ADT':
+                    print(f"Tipo de pasajero antes de traducir: '{passenger_type}'")
+                    
+                    if passenger_type and passenger_type.upper() == 'ADT':
                         passenger_type_display = 'Adulto'
-                    elif passenger_type.upper() == 'CHD':
+                    elif passenger_type and passenger_type.upper() == 'CHD':
                         passenger_type_display = 'Niño'
-                    elif passenger_type.upper() == 'INF':
+                    elif passenger_type and passenger_type.upper() == 'INF':
                         passenger_type_display = 'Infante'
                     else:
-                        passenger_type_display = passenger_type
+                        passenger_type_display = passenger_type or 'No especificado'
                         
-                body += f"""
+                    print(f"Tipo de pasajero traducido: '{passenger_type_display}'")
+                    
+                    # Añadir fila para este pasajero dentro del bucle
+                    body += f"""
                             <tr>
                                 <td>{first_name}</td>
                                 <td>{last_name}</td>
                                 <td>{passenger_type_display}</td>
                             </tr>
-                """
+                    """
             
             body += """
                         </table>
@@ -970,14 +1033,13 @@ def create_booking():
         
         # Recopilar datos de pasajeros
         passenger_data = {}
-        
-        # Adultos
+                # Adultos
         adult_data = []
         for i in range(1, adults + 1):
             adult = {
                 'firstName': request.form.get(f'adultFirstName{i}'),
                 'lastName': request.form.get(f'adultLastName{i}'),
-                'type': 'ADULT'
+                'type': 'ADT'
             }
             adult_data.append(adult)
         passenger_data['adults'] = adult_data
@@ -990,7 +1052,7 @@ def create_booking():
                     'firstName': request.form.get(f'childFirstName{i}'),
                     'lastName': request.form.get(f'childLastName{i}'),
                     'age': request.form.get(f'childAge{i}'),
-                    'type': 'CHILD'
+                    'type': 'CHD'
                 }
                 child_data.append(child)
             passenger_data['children'] = child_data
@@ -1003,7 +1065,7 @@ def create_booking():
                     'firstName': request.form.get(f'infantFirstName{i}'),
                     'lastName': request.form.get(f'infantLastName{i}'),
                     'age': request.form.get(f'infantAge{i}'),
-                    'type': 'INFANT'
+                    'type': 'INF'
                 }
                 infant_data.append(infant)
             passenger_data['infants'] = infant_data

@@ -2,6 +2,22 @@
 
 Todas las modificaciones notables del proyecto se documentarán en este archivo.
 
+## [1.12.0] - 2025-04-18
+
+### Añadido
+- **Sistema mejorado de correos electrónicos**:
+  - Implementación de almacenamiento de correos en base de datos SQLite
+  - Creación del modelo `EmailLog` para registro centralizado de correos
+  - Personalización del saludo con el nombre del pasajero principal
+  - Traducción de tipos de pasajeros (ADT → Adulto, CHD → Niño, INF → Infante)
+
+### Mejorado
+- **Optimización del envío de correos**:
+  - Envío de correos reales en todos los entornos (development, testing, production)
+  - Diagnóstico detallado y mejor manejo de errores
+  - Verificación de credenciales y validación de parámetros
+  - Interfaz de usuario mejorada para el envío de correos
+
 ## [1.11.0] - 2025-04-16
 
 ### Añadido

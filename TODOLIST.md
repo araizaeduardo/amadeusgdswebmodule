@@ -2,6 +2,20 @@
 
 Esta lista contiene mejoras propuestas para hacer la aplicación más atractiva y eficiente.
 
+## Tareas Completadas Recientemente
+
+- [x] **Mejora de la experiencia móvil**
+  - Optimización de la interfaz para dispositivos móviles
+  - Rediseño de tarjetas de resultados para mejor visualización en pantallas pequeñas
+  - Solución de problemas de elementos encimados en la visualización de vuelos
+  - Implementación de diseño responsive para todos los componentes
+  - Mejora de la legibilidad y usabilidad en dispositivos móviles
+
+- [x] Corrección del sistema de correos electrónicos de reserva
+  - Solucionado problema de visualización de nombres, apellidos y tipos de pasajeros
+  - Unificación de tipos de pasajeros (ADT, CHD, INF) en todo el código
+  - Mejorada la estructura HTML para mostrar correctamente todos los pasajeros
+
 ## Mejoras de Eficiencia
 
 ### Alta Prioridad
@@ -78,16 +92,6 @@ Esta lista contiene mejoras propuestas para hacer la aplicación más atractiva 
   - Reducir tiempo de respuesta del servidor
 
 ### Alta Prioridad
-- [ ] Mejorar experiencia móvil
-  - Optimizar interfaz para dispositivos móviles
-  - Rediseñar tarjetas de resultados para mejor visualización en pantallas pequeñas
-  - Mejorar la legibilidad de la información de vuelos en formato móvil
-  - Optimizar el espacio vertical en los resultados de búsqueda
-  - Implementar diseño compacto para fechas y horarios
-  - Añadir indicadores visuales más claros para las tarifas disponibles
-  - Mejorar la visualización de los logos de aerolíneas
-  - Implementar gestos táctiles para filtrar resultados
-  - Crear versión PWA (Progressive Web App)
 
 ### Baja Prioridad
 - [ ] Implementar internacionalización

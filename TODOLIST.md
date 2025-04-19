@@ -4,6 +4,14 @@ Esta lista contiene mejoras propuestas para hacer la aplicación más atractiva 
 
 ## Tareas Completadas Recientemente
 
+- [x] **Implementación de sistema de filtro dinámico por aerolínea**
+  - Extracción automática de las aerolíneas de los resultados de búsqueda
+  - Creación de interfaz con opciones seleccionables para cada aerolínea
+  - Visualización de logos junto a los nombres de las aerolíneas
+  - Añadido contador de resultados por aerolínea
+  - Implementación de filtrado en tiempo real sin recargar la página
+  - Diseño responsivo para dispositivos móviles y tabletas
+
 - [x] **Mejora de la experiencia móvil**
   - Optimización de la interfaz para dispositivos móviles
   - Rediseño de tarjetas de resultados para mejor visualización en pantallas pequeñas
@@ -47,15 +55,7 @@ Esta lista contiene mejoras propuestas para hacer la aplicación más atractiva 
 ### Media Prioridad
 - [ ] Añadir filtros interactivos
   - Desarrollar filtros deslizantes para precio, duración y número de escalas
-  - Implementar filtros por aerolínea con logos
   - Crear opción para mostrar/ocultar vuelos con escalas largas
-
-- [ ] Implementar sistema de filtro dinámico por aerolínea
-  - Extraer automáticamente las aerolíneas de los resultados de búsqueda
-  - Crear interfaz con checkboxes para cada aerolínea encontrada
-  - Mostrar logos junto a los nombres de las aerolíneas
-  - Añadir contador de resultados por aerolínea
-  - Implementar filtrado en tiempo real sin recargar la página
 
 ### Baja Prioridad
 - [ ] Personalización de la experiencia

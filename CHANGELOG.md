@@ -2,6 +2,18 @@
 
 Todas las modificaciones notables del proyecto se documentarán en este archivo.
 
+## [1.13.0] - 2025-04-18
+
+### Añadido
+- **Sistema de filtro dinámico por aerolínea**:
+  - Implementación de filtro interactivo entre el formulario de búsqueda y los resultados
+  - Extracción automática de aerolíneas disponibles en los resultados
+  - Interfaz visual con logos, nombres y contadores de vuelos por aerolínea
+  - Selección múltiple de aerolíneas para filtrado combinado
+  - Botón para limpiar filtros y restablecer la visualización completa
+  - Actualización dinámica de resultados y paginación
+  - Diseño responsivo optimizado para dispositivos móviles y tabletas
+
 ## [1.12.1] - 2025-04-18
 
 ### Corregido

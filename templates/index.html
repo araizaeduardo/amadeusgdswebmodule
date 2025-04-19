@@ -543,6 +543,61 @@
             width: 3rem;
             height: 3rem;
         }
+        
+        /* Estilos para el filtro de aerolíneas */
+        .airline-filter-option {
+            display: flex;
+            align-items: center;
+            padding: 0.5rem 1rem;
+            border: 1px solid #dee2e6;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            background-color: #fff;
+        }
+        
+        .airline-filter-option:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .airline-filter-option.active {
+            border-color: var(--secondary-color);
+            background-color: rgba(52, 152, 219, 0.1);
+        }
+        
+        .airline-logo-small {
+            height: 20px;
+            width: auto;
+            margin-right: 0.5rem;
+        }
+        
+        .airline-name {
+            font-size: 0.9rem;
+            margin-right: 0.5rem;
+        }
+        
+        .flight-count {
+            font-size: 0.8rem;
+            color: #6c757d;
+            background-color: #e9ecef;
+            padding: 0.1rem 0.4rem;
+            border-radius: 0.25rem;
+        }
+        
+        @media (max-width: 767px) {
+            .airline-filter-option {
+                padding: 0.4rem 0.6rem;
+                font-size: 0.85rem;
+            }
+            
+            .airline-logo-small {
+                height: 16px;
+            }
+            
+            .flight-count {
+                font-size: 0.7rem;
+            }
+        }
     </style>
 </head>
 <body {% if prefill %}data-prefill="{{ prefill|tojson|replace('"', '&quot;') }}"{% endif %}>
@@ -650,6 +705,23 @@
                         </form>
                     </div>
                 </div>
+                
+                <!-- Filtro por aerolínea (inicialmente oculto) -->
+                <div id="airline-filter" class="mt-4 mb-3" style="display: none;">
+                    <div class="card shadow">
+                        <div class="card-header bg-light">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0"><i class="fas fa-filter me-2"></i>Filtrar por aerolínea</h5>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" id="clear-filters">Limpiar filtros</button>
+                            </div>
+                        </div>
+                        <div class="card-body p-3">
+                            <div id="airline-options" class="d-flex flex-wrap gap-2">
+                                <!-- Las opciones de aerolíneas se generarán dinámicamente aquí -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
                 <div id="results" class="mt-4"></div>
             </div>
@@ -663,6 +735,121 @@
 
 
     <script>
+        // Variables globales para el filtrado
+        let allFlights = [];
+        let selectedAirlines = [];
+        
+        // Función para extraer aerolíneas únicas de los resultados
+        window.extractAirlines = function(flights) {
+            const airlinesMap = new Map();
+            
+            flights.forEach(flight => {
+                if (flight.itineraries && flight.itineraries.length > 0 && 
+                    flight.itineraries[0].segments && flight.itineraries[0].segments.length > 0) {
+                    const mainSegment = flight.itineraries[0].segments[0];
+                    const airlineCode = mainSegment.carrierCode;
+                    const airlineName = mainSegment.operating ? mainSegment.operating.carrierName || airlineCode : airlineCode;
+                    
+                    if (!airlinesMap.has(airlineCode)) {
+                        airlinesMap.set(airlineCode, {
+                            code: airlineCode,
+                            name: airlineName,
+                            count: 1
+                        });
+                    } else {
+                        airlinesMap.get(airlineCode).count++;
+                    }
+                }
+            });
+            
+            return Array.from(airlinesMap.values());
+        }
+        
+        // Función para mostrar el filtro de aerolíneas
+        window.showAirlineFilter = function(airlines) {
+            const filterContainer = document.getElementById('airline-filter');
+            const optionsContainer = document.getElementById('airline-options');
+            
+            // Mostrar el contenedor del filtro
+            filterContainer.style.display = 'block';
+            
+            // Limpiar opciones anteriores
+            optionsContainer.innerHTML = '';
+            
+            // Crear una opción para cada aerolínea
+            airlines.forEach(airline => {
+                const option = document.createElement('div');
+                option.className = 'airline-filter-option';
+                option.dataset.airlineCode = airline.code;
+                option.innerHTML = `
+                    <img src="https://pics.avs.io/80/40/${airline.code}.png" alt="${airline.name}" class="airline-logo-small">
+                    <span class="airline-name">${airline.name}</span>
+                    <span class="flight-count">${airline.count}</span>
+                `;
+                
+                // Añadir evento de clic para filtrar
+                option.addEventListener('click', function() {
+                    this.classList.toggle('active');
+                    
+                    const airlineCode = this.dataset.airlineCode;
+                    if (this.classList.contains('active')) {
+                        // Añadir a la lista de aerolíneas seleccionadas
+                        if (!selectedAirlines.includes(airlineCode)) {
+                            selectedAirlines.push(airlineCode);
+                        }
+                    } else {
+                        // Eliminar de la lista de aerolíneas seleccionadas
+                        const index = selectedAirlines.indexOf(airlineCode);
+                        if (index > -1) {
+                            selectedAirlines.splice(index, 1);
+                        }
+                    }
+                    
+                    // Aplicar filtro
+                    applyFilters();
+                });
+                
+                optionsContainer.appendChild(option);
+            });
+            
+            // Configurar el botón de limpiar filtros
+            document.getElementById('clear-filters').addEventListener('click', function() {
+                // Desmarcar todas las opciones
+                document.querySelectorAll('.airline-filter-option').forEach(option => {
+                    option.classList.remove('active');
+                });
+                
+                // Limpiar la lista de aerolíneas seleccionadas
+                selectedAirlines = [];
+                
+                // Mostrar todos los vuelos
+                applyFilters();
+            });
+        }
+        
+        // Función para aplicar filtros
+        window.applyFilters = function() {
+            // Si no hay aerolíneas seleccionadas, mostrar todos los vuelos
+            if (selectedAirlines.length === 0) {
+                showFlightsPage(1, allFlights);
+                return;
+            }
+            
+            // Filtrar vuelos por aerolíneas seleccionadas
+            const filteredFlights = allFlights.filter(flight => {
+                if (flight.itineraries && flight.itineraries.length > 0 && 
+                    flight.itineraries[0].segments && flight.itineraries[0].segments.length > 0) {
+                    const mainSegment = flight.itineraries[0].segments[0];
+                    const airlineCode = mainSegment.carrierCode;
+                    return selectedAirlines.includes(airlineCode);
+                }
+                return false;
+            });
+            
+            // Mostrar vuelos filtrados
+            showFlightsPage(1, filteredFlights);
+        }
+        
         // Función para mostrar/ocultar detalles del vuelo
         function toggleDetails(flightId) {
             const detailsElement = document.getElementById(flightId);
@@ -782,6 +969,19 @@
             `;
 
             try {
+                // Mostrar el indicador de carga
+                resultsDiv.innerHTML = `
+                    <div class="text-center p-4">
+                        <div class="spinner-border loading-spinner text-primary" role="status">
+                            <span class="visually-hidden">Buscando vuelos...</span>
+                        </div>
+                        <p class="mt-3 text-muted">Buscando los mejores vuelos para ti...</p>
+                    </div>
+                `;
+                
+                // Ocultar el filtro de aerolíneas mientras se busca
+                document.getElementById('airline-filter').style.display = 'none';
+                
                 const formData = new FormData(this);
                 const response = await fetch('/search_flights', {
                     method: 'POST',
@@ -791,6 +991,10 @@
 
                 if (response.ok) {
                     if (data.data && data.data.length > 0) {
+                        // Guardar todos los vuelos para filtrado
+                        allFlights = data.data;
+                        selectedAirlines = []; // Reiniciar filtros
+                        
                         // Configuración de paginación
                         const flightsPerPage = 10;
                         let currentPage = 1;
@@ -798,10 +1002,12 @@
                         const totalPages = Math.ceil(totalFlights / flightsPerPage);
                         
                         // Función para mostrar los vuelos de la página actual
-                        function showFlightsPage(page) {
+                        window.showFlightsPage = function(page, flightsToDisplay = allFlights) {
+                            const totalFilteredFlights = flightsToDisplay.length;
+                            const totalFilteredPages = Math.ceil(totalFilteredFlights / flightsPerPage);
                             const startIndex = (page - 1) * flightsPerPage;
-                            const endIndex = Math.min(startIndex + flightsPerPage, totalFlights);
-                            const flightsToShow = data.data.slice(startIndex, endIndex);
+                            const endIndex = Math.min(startIndex + flightsPerPage, totalFilteredFlights);
+                            const flightsToShow = flightsToDisplay.slice(startIndex, endIndex);
                             
                             let html = '<div class="animate-fade-in">';
                             
@@ -811,10 +1017,11 @@
                                     <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center">
                                         <div class="mb-2 mb-md-0">
                                             <i class="fas fa-info-circle me-2"></i>
-                                            Se encontraron <strong>${totalFlights}</strong> vuelos disponibles
+                                            Se encontraron <strong>${totalFilteredFlights}</strong> vuelos disponibles
+                                            ${selectedAirlines.length > 0 ? ` (filtrados de ${totalFlights})` : ''}
                                         </div>
                                         <div>
-                                            Mostrando página <strong>${page}</strong> de <strong>${totalPages}</strong>
+                                            Mostrando página <strong>${page}</strong> de <strong>${totalFilteredPages}</strong>
                                         </div>
                                     </div>
                                 </div>
@@ -1029,7 +1236,7 @@
                             });
                             
                             // Añadir controles de paginación
-                            if (totalPages > 1) {
+                            if (totalFilteredPages > 1) {
                                 html += `
                                     <nav aria-label="Navegación de páginas">
                                         <ul class="pagination justify-content-center">
@@ -1042,7 +1249,7 @@
                                             
                                 // Mostrar números de página (máximo 5)
                                 const startPage = Math.max(1, page - 2);
-                                const endPage = Math.min(totalPages, startPage + 4);
+                                const endPage = Math.min(totalFilteredPages, startPage + 4);
                                 
                                 for (let i = startPage; i <= endPage; i++) {
                                     html += `
@@ -1053,7 +1260,7 @@
                                 }
                                             
                                 html += `
-                                            <li class="page-item ${page === totalPages ? 'disabled' : ''}">
+                                            <li class="page-item ${page === totalFilteredPages ? 'disabled' : ''}">
                                                 <a class="page-link" href="#" data-page="${page+1}">
                                                     Siguiente <i class="fas fa-chevron-right"></i>
                                                 </a>
@@ -1071,9 +1278,9 @@
                                 link.addEventListener('click', function(e) {
                                     e.preventDefault();
                                     const pageNum = parseInt(this.getAttribute('data-page'));
-                                    if (pageNum >= 1 && pageNum <= totalPages) {
+                                    if (pageNum >= 1 && pageNum <= totalFilteredPages) {
                                         currentPage = pageNum;
-                                        showFlightsPage(currentPage);
+                                        showFlightsPage(currentPage, allFlights);
                                         // Scroll hacia arriba para ver los nuevos resultados
                                         window.scrollTo({top: resultsDiv.offsetTop - 20, behavior: 'smooth'});
                                     }
@@ -1081,9 +1288,15 @@
                             });
                         }
                         
+                        // Extraer y mostrar el filtro de aerolíneas
+                        const airlines = extractAirlines(data.data);
+                        showAirlineFilter(airlines);
+                        
                         // Mostrar la primera página de resultados
                         showFlightsPage(currentPage);
                     } else {
+                        // Ocultar el filtro de aerolíneas si no hay resultados
+                        document.getElementById('airline-filter').style.display = 'none';
                         resultsDiv.innerHTML = `
                             <div class="alert alert-info animate-fade-in" role="alert">
                                 <i class="fas fa-info-circle me-2"></i>

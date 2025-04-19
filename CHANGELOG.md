@@ -2,6 +2,14 @@
 
 Todas las modificaciones notables del proyecto se documentarán en este archivo.
 
+## [1.12.1] - 2025-04-18
+
+### Corregido
+- **Corrección en correos electrónicos de reserva**:
+  - Solucionado problema donde no se mostraban correctamente los nombres, apellidos y tipos de pasajeros en los correos
+  - Unificación de los tipos de pasajeros a formato estándar (ADT, CHD, INF) en todo el código
+  - Corregida la indentación y estructura del bucle que genera las filas de la tabla HTML de pasajeros
+
 ## [1.12.0] - 2025-04-18
 
 ### Añadido
